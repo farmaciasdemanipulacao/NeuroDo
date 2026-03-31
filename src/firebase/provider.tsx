@@ -205,7 +205,16 @@ export const useFirebaseApp = (): FirebaseApp => {
 };
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
-  return useMemo(factory, deps);
+  const memoizedValue = useMemo(factory, deps);
+  if (memoizedValue && typeof memoizedValue === 'object') {
+    try {
+      (memoizedValue as any).__memo = true;
+    } catch {
+      // Some Firebase objects may be frozen or not extensible.
+      // In that case, we still return the memoized value and let the hook handle it.
+    }
+  }
+  return memoizedValue;
 }
 
 /**

@@ -1,0 +1,40 @@
+{
+  "placeholderImages": [
+    {
+      "id": "project-bg-1",
+      "description": "Abstract blue waves",
+      "imageUrl": "https://images.unsplash.com/photo-1614850523011-8f49ffc73908?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGJsdWV8ZW58MHx8fHwxNzY3OTgxNzcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract blue"
+    },
+    {
+      "id": "project-bg-2",
+      "description": "Geometric purple patterns",
+      "imageUrl": "https://images.unsplash.com/photo-1569415131538-587d156aac48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhYnN0cmFjdCUyMHB1cnBsZXxlbnwwfHx8fDE3Njc5OTAwMDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract purple"
+    },
+    {
+      "id": "project-bg-3",
+      "description": "Vibrant orange sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1707324148764-99647364afa3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMG9yYW5nZXxlbnwwfHx8fDE3Njc5MTUzMzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract orange"
+    },
+    {
+      "id": "project-bg-4",
+      "description": "Soft pink clouds",
+      "imageUrl": "https://images.unsplash.com/photo-1580508244245-c446ca981a6b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhYnN0cmFjdCUyMHBpbmt8ZW58MHx8fHwxNzY3OTk3ODA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract pink"
+    },
+    {
+      "id": "project-bg-5",
+      "description": "Calm teal water",
+      "imageUrl": "https://images.unsplash.com/photo-1740508905958-236bf058e7b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMHRlYWx8ZW58MHx8fHwxNzY3OTk3ODA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract teal"
+    },
+    {
+      "id": "user-avatar",
+      "description": "User profile picture",
+      "imageUrl": "https://images.unsplash.com/photo-1725028748781-7adb1df9a943?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwZmFjZXxlbnwwfHx8fDE3Njc5MDQ5Mjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person face"
+    }
+  ]
+}

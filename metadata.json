@@ -1,0 +1,9 @@
+{
+  "name": "NeuroDO - SO para Empreendedor Neurodivergente",
+  "description": "Um sistema operacional completo para auxiliar empreendedores neurodivergente na gestão de foco, metas, equipe e produtividade.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

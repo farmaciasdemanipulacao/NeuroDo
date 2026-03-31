@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Rules for Firebase Storage
+service firebase.storage {
+  // Match the path to your Storage bucket
+  match /b/{bucket}/o {
+
+    // Allow public read access to all files. 
+    // This is useful for displaying images, but you may want to restrict this
+    // in a production application if the images are sensitive.
+    match /{allPaths=**} {
+      allow read;
+    }
+    
+    // Rules for user avatars
+    // Folder structure: /avatars/{userId}/{fileName}
+    match /avatars/{userId}/{fileName} {
+
+      // Allow a user to upload (create) a file in their own folder
+      // if they are authenticated.
+      allow create: if request.auth != null && request.auth.uid == userId
+                    // and if the file is an image
+                    && request.resource.contentType.matches('image/.*')
+                    // and if the file size is less than 5MB
+                    && request.resource.size < 5 * 1024 * 1024;
+                    
+      // Allow a user to read, update, or delete their own avatar.
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

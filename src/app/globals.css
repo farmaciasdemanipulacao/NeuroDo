@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 236 22% 10%; /* Deep, dark Blue-Gray */
+    --foreground: 240 10% 90%;
+    --card: 235 21% 14%;
+    --card-foreground: 240 10% 90%;
+    --popover: 236 22% 10%;
+    --popover-foreground: 240 10% 90%;
+    --primary: 142 71% 45%; /* Vivid Green */
+    --primary-foreground: 142 71% 10%;
+    --secondary: 235 21% 22%;
+    --secondary-foreground: 240 10% 90%;
+    --muted: 235 21% 22%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 38 92% 50%; /* Warm Amber */
+    --accent-foreground: 38 92% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 235 21% 22%;
+    --input: 235 21% 22%;
+    --ring: 142 71% 45%;
+    --radius: 0.5rem;
+
+    /* Chart Colors */
+    --chart-1: 211 82% 56%; /* ENVOX Blue */
+    --chart-2: 265 83% 66%; /* FARMÁCIAS Purple */
+    --chart-3: 26 94% 53%; /* GERAÇÃO PJ Orange */
+    --chart-4: 336 82% 61%; /* FELIZMENTE Pink */
+    --chart-5: 173 80% 40%; /* INFLUENCERS Teal */
+
+    /* Sidebar Colors */
+    --sidebar-background: 236 22% 8%;
+    --sidebar-foreground: 240 10% 85%;
+    --sidebar-primary: hsl(var(--primary));
+    --sidebar-primary-foreground: hsl(var(--primary-foreground));
+    --sidebar-accent: 235 21% 16%;
+    --sidebar-accent-foreground: 240 10% 95%;
+    --sidebar-border: 235 21% 18%;
+    --sidebar-ring: hsl(var(--ring));
+  }
+
+  .dark {
+    --background: 236 22% 10%;
+    --foreground: 240 10% 90%;
+    --card: 235 21% 14%;
+    --card-foreground: 240 10% 90%;
+    --popover: 236 22% 10%;
+    --popover-foreground: 240 10% 90%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 142 71% 10%;
+    --secondary: 235 21% 22%;
+    --secondary-foreground: 240 10% 90%;
+    --muted: 235 21% 22%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 38 92% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 235 21% 22%;
+    --input: 235 21% 22%;
+    --ring: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+}

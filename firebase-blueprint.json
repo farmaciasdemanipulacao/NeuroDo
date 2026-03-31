@@ -1,0 +1,819 @@
+{
+  "entities": {
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task for the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this task."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main description of the task."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the task has been completed."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project this task belongs to."
+        },
+        "isMIT": {
+          "type": "boolean",
+          "description": "Whether this is a Most Important Task for the day."
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "The priority level of the task."
+        },
+        "scheduledDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The specific date the task is scheduled for."
+        },
+        "scheduledTime": {
+          "type": "string",
+          "enum": [
+            "Manhã",
+            "Tarde",
+            "Noite"
+          ],
+          "description": "The time of day the task is scheduled for."
+        },
+        "estimatedMinutes": {
+          "type": "number",
+          "description": "The estimated time in minutes to complete the task."
+        },
+        "delegatedTo": {
+          "type": "string",
+          "description": "Who the task has been delegated to."
+        },
+        "delegationStatus": {
+          "type": "string",
+          "enum": [
+            "Não Delegada",
+            "Delegada",
+            "Em Acompanhamento",
+            "Concluída"
+          ],
+          "description": "The status of the task delegation."
+        },
+        "isDelegated": {
+          "type": "boolean"
+        },
+        "delegationId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Operacional",
+            "Tático",
+            "Estratégico"
+          ]
+        },
+        "linkedGoalId": {
+          "type": "string",
+          "description": "The ID of the goal this task contributes to."
+        },
+        "linkedMilestoneId": {
+            "type": "string",
+            "description": "The ID of the milestone this task belongs to."
+        }
+      },
+      "required": [
+        "userId",
+        "content",
+        "completed"
+      ]
+    },
+    "Subtask": {
+      "title": "Subtask",
+      "description": "A sub-task within a milestone checklist.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "estimatedMinutes": { "type": "number" },
+        "energyRequired": { "type": "number" },
+        "suggestedWeek": { "type": "number" },
+        "status": { "type": "string", "enum": ["template", "scheduled", "completed"] },
+        "linkedTaskId": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "status", "order"]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a goal for the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Goal entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this goal."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the goal."
+        },
+        "description": {
+          "type": "string",
+          "description": "A more detailed description of the goal."
+        },
+        "targetValue": {
+          "type": "number",
+          "description": "The target value for the goal (e.g., revenue target)."
+        },
+        "currentValue": {
+          "type": "number",
+          "description": "The current value achieved towards the goal."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["currency", "number", "percentage"],
+          "description": "The unit of measurement for the goal's values."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the goal starts.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date when the goal ends.",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["yearly", "quarterly", "monthly", "weekly"],
+          "description": "The type of the goal."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project this goal belongs to."
+        },
+        "targetRevenue": {
+          "type": "number"
+        },
+        "currentRevenue": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "description",
+        "targetValue",
+        "currentValue",
+        "unit",
+        "startDate",
+        "endDate",
+        "type"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a playbook or strategy document.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Document entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this document."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the document."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the document (e.g., markdown, HTML)."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project this document belongs to."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "content"
+      ]
+    },
+    "Milestone": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Milestone",
+      "type": "object",
+      "description": "Represents a roadmap milestone.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Milestone entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this milestone."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the milestone."
+        },
+        "description": {
+          "type": "string",
+          "description": "A more detailed description of the milestone."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date when the milestone starts."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date when the milestone is due."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Não Iniciado",
+            "Em Progresso",
+            "Concluído",
+            "Atrasado"
+          ]
+        },
+        "progress": {
+          "type": "number"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to the Project this milestone belongs to."
+        },
+        "dependsOn": {
+          "type": "string"
+        },
+        "linkedGoalId": {
+          "type": "string",
+          "description": "The ID of the goal this milestone contributes to."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "projectId",
+        "startDate",
+        "endDate",
+        "status"
+      ]
+    },
+    "UserStats": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserStats",
+      "type": "object",
+      "description": "Represents user statistics such as XP, level, and streaks.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserStats entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity. (Relationship: User 1:1 UserStats)"
+        },
+        "xp": {
+          "type": "number",
+          "description": "The user's experience points."
+        },
+        "level": {
+          "type": "number",
+          "description": "The user's current level."
+        },
+        "streak": {
+          "type": "number",
+          "description": "The user's current streak of consecutive days of progress."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "xp",
+        "level",
+        "streak"
+      ]
+    },
+    "Achievement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Achievement",
+      "type": "object",
+      "description": "Represents an unlocked achievement or badge.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Achievement entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User entity. (Relationship: User 1:N Achievement)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the achievement."
+        },
+        "description": {
+          "type": "string",
+          "description": "A more detailed description of the achievement."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the achievement.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "description",
+        "imageUrl"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Project entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this project."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the project."
+        },
+        "color": {
+          "type": "string",
+          "description": "The color associated with the project."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "description",
+        "color"
+      ]
+    },
+    "Delegation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Delegation",
+      "description": "Represents a delegated task.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner of the delegation."
+        },
+        "taskTitle": {
+          "type": "string",
+          "description": "Title of the delegated task."
+        },
+        "taskDescription": {
+          "type": "string",
+          "description": "Detailed description of what needs to be done."
+        },
+        "delegatedTo": {
+          "type": "string",
+          "description": "Name of the team member."
+        },
+        "delegatedToContact": {
+          "type": "string",
+          "description": "Email or WhatsApp of the team member."
+        },
+        "delegatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the task was delegated."
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the task is due."
+        },
+        "followUpDates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": "Scheduled follow-up dates."
+        },
+        "lastFollowUp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last follow-up."
+        },
+        "followUpCount": {
+          "type": "number",
+          "description": "How many times a follow-up was made."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pendente",
+            "Em Progresso",
+            "Aguardando Resposta",
+            "Concluída",
+            "Atrasada"
+          ],
+          "description": "Current status of the delegation."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Contextual notes for the delegation."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project this delegation belongs to."
+        },
+        "goalId": {
+            "type": "string",
+            "description": "The Goal this delegation contributes to."
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "Alta",
+            "Média",
+            "Baixa"
+          ],
+          "description": "Priority of the task."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation."
+        },
+        "completedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "Timestamp of completion."
+        }
+      },
+      "required": [
+        "userId",
+        "taskTitle",
+        "delegatedTo",
+        "dueDate",
+        "status",
+        "priority",
+        "createdAt"
+      ]
+    },
+    "TeamMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TeamMember",
+      "description": "Represents a member of the user's team or personal circle.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who this team member belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the team member."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role or position of the team member."
+        },
+        "relationshipType": {
+          "type": "string",
+          "description": "The type of relationship with the user.",
+          "enum": [
+            "Profissional",
+            "Amigo(a)",
+            "Cônjuge",
+            "Pai/Mãe",
+            "Irmão/Irmã",
+            "Mentor(a)",
+            "Outro"
+          ]
+        },
+        "birthDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The team member's birth date."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the member's profile picture."
+        },
+        "profileResults": {
+          "type": "string",
+          "description": "Results from personality or profile tests (e.g., DISC, MBTI)."
+        },
+        "mainTasks": {
+          "type": "string",
+          "description": "A summary of the member's key responsibilities."
+        },
+        "observations": {
+          "type": "string",
+          "description": "Important notes on how to best interact or delegate to this person."
+        },
+        "profileQuestionnaireId": {
+          "type": "string",
+          "description": "Reference to the profile questionnaire document for this member."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "role",
+        "relationshipType",
+        "mainTasks"
+      ]
+    },
+    "ProfileQuestionnaire": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProfileQuestionnaire",
+      "description": "Stores the state and results of a behavioral profile questionnaire for a team member.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the questionnaire."
+        },
+        "teamMemberId": {
+          "type": "string",
+          "description": "The ID of the team member this questionnaire belongs to."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the questionnaire.",
+          "enum": [
+            "pending",
+            "completed"
+          ]
+        },
+        "responses": {
+          "type": "object",
+          "description": "A map storing the user's answers to the questions."
+        },
+        "generatedProfile": {
+          "type": "string",
+          "description": "The final behavioral profile text generated by the AI."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the questionnaire was created."
+        },
+        "completedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "Timestamp of when the questionnaire was completed."
+        }
+      },
+      "required": [
+        "teamMemberId",
+        "status",
+        "createdAt"
+      ]
+    },
+    "FeedbackSession": {
+      "title": "FeedbackSession",
+      "description": "Stores a record of a generated feedback session script.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string", "description": "The user who generated the session." },
+        "memberId": { "type": "string", "description": "The team member the session is for." },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "script": {
+          "type": "object",
+          "properties": {
+            "opening": { "type": "string" },
+            "praisePoints": { "type": "string" },
+            "developmentPoints": { "type": "string" },
+            "nextSteps": { "type": "string" },
+            "closing": { "type": "string" }
+          },
+          "required": ["opening", "praisePoints", "developmentPoints", "nextSteps", "closing"]
+        }
+      },
+      "required": ["userId", "memberId", "generatedAt", "script"]
+    },
+    "PDIHistory": {
+      "title": "PDIHistory",
+      "description": "Stores a historical record of a generated Personal Development Plan (PDI).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string", "description": "The user who generated the PDI." },
+        "memberId": { "type": "string", "description": "The team member the PDI is for." },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "pdiContent": { "type": "string", "description": "The full Markdown content of the PDI." }
+      },
+      "required": ["userId", "memberId", "generatedAt", "pdiContent"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/profile/{profileId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data."
+        }
+      },
+      {
+        "path": "/users/{userId}/user_stats/{statsId}",
+        "definition": {
+          "entityName": "UserStats",
+          "schema": {
+            "$ref": "#/backend/entities/UserStats"
+          },
+          "description": "Stores user statistics (XP, level, streak)."
+        }
+      },
+      {
+        "path": "/users/{userId}/achievements/{achievementId}",
+        "definition": {
+          "entityName": "Achievement",
+          "schema": {
+            "$ref": "#/backend/entities/Achievement"
+          },
+          "description": "Stores user achievements."
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project metadata."
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tasks for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/goals/{goalId}",
+        "definition": {
+          "entityName": "Goal",
+          "schema": {
+            "$ref": "#/backend/entities/Goal"
+          },
+          "description": "Stores goals for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores documents for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/milestones/{milestoneId}",
+        "definition": {
+          "entityName": "Milestone",
+          "schema": {
+            "$ref": "#/backend/entities/Milestone"
+          },
+          "description": "Stores milestones for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/milestones/{milestoneId}/subtasks/{subtaskId}",
+        "definition": {
+          "entityName": "Subtask",
+          "schema": {
+            "$ref": "#/backend/entities/Subtask"
+          },
+          "description": "Stores checklist items for a specific milestone."
+        }
+      },
+      {
+        "path": "/users/{userId}/delegations/{delegationId}",
+        "definition": {
+          "entityName": "Delegation",
+          "schema": {
+            "$ref": "#/backend/entities/Delegation"
+          },
+          "description": "Stores delegated tasks for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/team/{memberId}",
+        "definition": {
+          "entityName": "TeamMember",
+          "schema": {
+            "$ref": "#/backend/entities/TeamMember"
+          },
+          "description": "Stores team members for a user."
+        }
+      },
+      {
+        "path": "/profile_questionnaires/{questionnaireId}",
+        "definition": {
+          "entityName": "ProfileQuestionnaire",
+          "schema": {
+            "$ref": "#/backend/entities/ProfileQuestionnaire"
+          },
+          "description": "Stores behavioral profile questionnaires. Publicly readable."
+        }
+      },
+      {
+        "path": "/users/{userId}/feedback_sessions/{sessionId}",
+        "definition": {
+          "entityName": "FeedbackSession",
+          "schema": { "$ref": "#/entities/FeedbackSession" },
+          "description": "Stores generated feedback session scripts."
+        }
+      },
+      {
+        "path": "/users/{userId}/pdi_history/{pdiId}",
+        "definition": {
+          "entityName": "PDIHistory",
+          "schema": { "$ref": "#/entities/PDIHistory" },
+          "description": "Stores generated PDI versions."
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure has been refactored to a nested model. All user-specific data is now stored in sub-collections under a main '/users/{userId}' document. This improves data locality, simplifies security rules by enforcing ownership at the root level, and makes queries for a specific user's data more efficient as they are scoped to a specific document path. Top-level collections are reserved for public or cross-user data, such as the 'profile_questionnaires' which need to be accessible via a public link. A 'subtasks' sub-collection was added under milestones to support the checklist feature."
+  }
+}

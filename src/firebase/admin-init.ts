@@ -9,17 +9,30 @@ const getAdminApp = () => {
     return admin.app();
   }
 
-  // If not initialized, create a new app instance.
-  // In a Google-managed environment (like Cloud Functions, App Engine, or Firebase Hosting with SSR),
-  // the SDK can automatically detect the configuration from environment variables.
-  // You don't need to pass a service account key file.
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const projectId = process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  if (serviceAccountKey) {
+    try {
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      return admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId,
+      });
+    } catch (error) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY é inválido. Verifique o JSON configurado nas variáveis de ambiente.');
+    }
+  }
+
   try {
     return admin.initializeApp({
       credential: admin.credential.applicationDefault(),
+      projectId,
     });
   } catch (error) {
     console.error('Firebase Admin SDK initialization failed:', error);
-    throw new Error('Could not initialize Firebase Admin SDK. Ensure the environment is set up correctly.');
+    throw new Error('Could not initialize Firebase Admin SDK. Ensure FIREBASE_SERVICE_ACCOUNT_KEY is configured or application default credentials are available.');
   }
 };
 

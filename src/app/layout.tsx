@@ -23,10 +23,8 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
       <head>
         {/* Google Fonts are now imported in globals.css */}
-        <link rel="icon" href="/logo-neurodo-favicon-100x100.webp" type="image/webp" />
-        <link rel="icon" href="/logo-neurodo-favicon.png" type="image/png" />
-        <link rel="shortcut icon" href="/logo-neurodo-favicon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/logo-neurodo-favicon-100x100.webp" />
+        <link rel="icon" href="/logo-neurodo-favicon-100x100.ico" type="image/x-icon" />
+        <link rel="shortcut icon" href="/logo-neurodo-favicon-100x100.ico" />
       </head>
       <body className="font-body antialiased bg-background text-foreground" suppressHydrationWarning>
         <FirebaseClientProvider>

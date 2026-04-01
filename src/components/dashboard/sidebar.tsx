@@ -68,8 +68,8 @@ export function AppSidebar() {
   };
 
   const sidebarHeader = (
-    <div className="flex flex-col gap-2 p-2 pt-4">
-      <Logo />
+    <div className="flex flex-col items-center justify-center gap-2 p-2 pt-4">
+      <Logo variant="horizontal" size="md" className="max-w-[16rem]" />
     </div>
   );
 

@@ -12,13 +12,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageCircle, Send, Sparkles } from 'lucide-react';
+import { Loader2, MessageCircle, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
 
 type Message = {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'error';
   content: string;
 };
 
@@ -29,57 +30,166 @@ const quickActions = [
   { label: '😰 Estou ansioso', prompt: 'Estou me sentindo ansioso com [descreva a situação]. Pode me ajudar a organizar meus pensamentos?' },
 ];
 
+// Constantes para retry
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+async function chatWithMentorWithRetry(
+  message: string,
+  history: Message[],
+  retryCount = 0
+): Promise<string> {
+  try {
+    const historyForApi = history
+      .filter(m => m.role !== 'error')
+      .map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
+
+    const result = await chatWithMentor({
+      message,
+      history: historyForApi,
+    });
+
+    return result.response;
+  } catch (error: any) {
+    const errorMessage = error?.message || 'Erro desconhecido ao consultar mentor';
+    console.error(`[Retry ${retryCount}/${MAX_RETRIES}] Erro no chat:`, errorMessage);
+
+    // Retry apenas para erros de rede e timeout, não para erros de validação
+    if (retryCount < MAX_RETRIES && shouldRetry(errorMessage)) {
+      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount); // Exponential backoff
+      console.log(`[Retry] Aguardando ${delay}ms antes de tentar novamente...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return chatWithMentorWithRetry(message, history, retryCount + 1);
+    }
+
+    throw error;
+  }
+}
+
+function shouldRetry(errorMessage: string): boolean {
+  const retryableErrors = [
+    'timeout',
+    'ECONNREFUSED',
+    'temporariamente indisponível',
+    'Muitas requisições',
+    'levou muito tempo',
+  ];
+  return retryableErrors.some(err => errorMessage.toLowerCase().includes(err.toLowerCase()));
+}
+
 export function AiMentorChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Scroll to bottom when messages change
+    // Scroll to bottom quando mensagens mudam
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+      const timer = setTimeout(() => {
+        scrollAreaRef.current?.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [messages, isProcessing]);
 
   const handleSend = async () => {
-    const userMessage = input;
-    if (!userMessage.trim()) return;
+    const userMessage = input.trim();
+    if (!userMessage) return;
 
+    setHasError(false);
     const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setInput('');
     setIsProcessing(true);
 
-    try {
-      // O histórico enviado para o backend é o estado ANTES de adicionar a nova mensagem do modelo.
-      const history = messages; 
+    console.log('[AI Mentor Chat] Enviando mensagem:', { length: userMessage.length });
 
-      const result = await chatWithMentor({
-        message: userMessage,
-        history: history,
+    try {
+      const response = await chatWithMentorWithRetry(userMessage, messages);
+
+      if (!response || response.trim().length === 0) {
+        throw new Error('Resposta vazia do mentor');
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      console.log('[AI Mentor Chat] Resposta recebida com sucesso');
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Erro desconhecido';
+      
+      console.error('[AI Mentor Chat] Erro durante requisição:', {
+        error: errorMessage,
+        stack: error?.stack,
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: result.response }]);
-    } catch (error: any) {
-      console.error('AI Mentor chat failed:', error);
-      const friendlyMessage = error.message.includes('configuração do servidor') 
-        ? 'Ocorreu um erro de configuração no servidor. Verifique as chaves de API e IDs.'
-        : 'Não foi possível obter uma resposta do mentor. Tente novamente.';
-      
+      setHasError(true);
+
+      // Determinar mensagem amigável baseada no erro
+      const friendlyMessage = determineFriendlyErrorMessage(errorMessage);
+
+      // Mostrar toast de erro
       toast({
         variant: 'destructive',
-        title: 'Erro no Chat',
+        title: 'Problemas ao Consultar Mentor',
         description: friendlyMessage,
+        duration: 5000,
       });
 
-      // Adiciona uma mensagem de erro ao chat para o usuário ver
-      setMessages(prev => [...prev, { role: 'assistant', content: `Desculpe, ocorreu um erro de comunicação. (${friendlyMessage})` }]);
+      // Adicionar mensagem de erro ao chat
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'error',
+          content: friendlyMessage,
+        },
+      ]);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const determineFriendlyErrorMessage = (error: string): string => {
+    const lowerError = error.toLowerCase();
+
+    if (lowerError.includes('chave') || lowerError.includes('401')) {
+      return 'A chave de API não está configurada corretamente. Entre em contato com o administrador.';
+    }
+
+    if (lowerError.includes('429') || lowerError.includes('muitas requisições')) {
+      return 'Muitas requisições rápidas. Aguarde um pouco e tente novamente.';
+    }
+
+    if (
+      lowerError.includes('500') ||
+      lowerError.includes('indisponível') ||
+      lowerError.includes('temporário')
+    ) {
+      return 'O servidor de IA está temporariamente fora. Tente novamente em alguns instantes.';
+    }
+
+    if (lowerError.includes('timeout') || lowerError.includes('levou muito tempo')) {
+      return 'A resposta levou muito tempo. Tente novamente.';
+    }
+
+    if (lowerError.includes('conexão') || lowerError.includes('network')) {
+      return 'Verifique sua conexão com a internet e tente novamente.';
+    }
+
+    if (lowerError.includes('vazia') || lowerError.includes('inválida')) {
+      return 'Por favor, escreva uma mensagem válida e tente novamente.';
+    }
+
+    // Fallback
+    return 'Desculpe, ocorreu um problema ao consultar o mentor. Tente novamente em alguns instantes.';
   };
 
   const handleQuickAction = (prompt: string) => {
@@ -106,12 +216,22 @@ export function AiMentorChat() {
             </SheetDescription>
           </SheetHeader>
 
+          {/* Alert de erro persistente */}
+          {hasError && (
+            <Alert variant="destructive" className="my-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Estou tendo dificuldades de comunicação. Tente novamente ou aguarde um momento.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <ScrollArea className="flex-1 my-4 pr-4 -mr-4" ref={scrollAreaRef}>
             <div className="space-y-6">
               {messages.length === 0 && (
-                 <div className="text-center text-sm text-muted-foreground p-4">
-                    Comece uma conversa digitando abaixo ou usando uma ação rápida.
-                 </div>
+                <div className="text-center text-sm text-muted-foreground p-4">
+                  Comece uma conversa digitando abaixo ou usando uma ação rápida.
+                </div>
               )}
               {messages.map((message, index) => (
                 <div
@@ -121,51 +241,61 @@ export function AiMentorChat() {
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  {message.role === 'assistant' && (
+                  {(message.role === 'assistant' || message.role === 'error') && (
                     <Avatar className="h-8 w-8">
-                       <AvatarFallback className="bg-primary text-primary-foreground">IA</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {message.role === 'error' ? '⚠️' : 'IA'}
+                      </AvatarFallback>
                     </Avatar>
                   )}
-                   <div
+                  <div
                     className={cn(
                       'max-w-[80%] rounded-lg p-3 text-sm whitespace-pre-wrap',
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                        : message.role === 'error'
+                          ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                          : 'bg-muted'
                     )}
                   >
                     {message.content}
                   </div>
-                   {message.role === 'user' && (
-                     <Avatar className="h-8 w-8">
-                       <AvatarImage src="https://picsum.photos/seed/user-avatar/100/100" alt="@user" />
-                       <AvatarFallback>G</AvatarFallback>
-                     </Avatar>
-                   )}
+                  {message.role === 'user' && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://picsum.photos/seed/user-avatar/100/100" alt="@user" />
+                      <AvatarFallback>G</AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
               ))}
               {isProcessing && (
-                 <div className="flex items-start gap-3 justify-start">
-                    <Avatar className="h-8 w-8">
-                       <AvatarFallback className="bg-primary text-primary-foreground">IA</AvatarFallback>
-                    </Avatar>
-                    <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-sm text-muted-foreground">Pensando...</span>
-                    </div>
+                <div className="flex items-start gap-3 justify-start">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground">IA</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Pensando...</span>
+                  </div>
                 </div>
               )}
             </div>
           </ScrollArea>
 
           <div className="mt-auto space-y-4">
-             <div className="grid grid-cols-2 gap-2">
-                {quickActions.map(action => (
-                    <Button key={action.label} variant="outline" size="sm" onClick={() => handleQuickAction(action.prompt)}>
-                        {action.label}
-                    </Button>
-                ))}
-             </div>
+            <div className="grid grid-cols-2 gap-2">
+              {quickActions.map(action => (
+                <Button
+                  key={action.label}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction(action.prompt)}
+                  disabled={isProcessing}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
             <div className="flex items-center gap-2">
               <Input
                 id="message"

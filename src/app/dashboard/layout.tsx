@@ -6,6 +6,7 @@ import { AppSidebar } from '@/components/dashboard/sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Header } from '@/components/dashboard/header';
 import { AiMentorChat } from '@/components/dashboard/ai-mentor-chat';
+import { AiMentorErrorBoundary } from '@/components/dashboard/ai-mentor-error-boundary';
 import { Loader2 } from 'lucide-react';
 import { useUser } from '@/firebase/provider';
 import { EnergyCheckin } from '@/components/dashboard/energy-checkin';
@@ -50,7 +51,9 @@ export default function DashboardLayout({
       </SidebarProvider>
 
       <FloatingFocusTimer />
-      <AiMentorChat />
+      <AiMentorErrorBoundary>
+        <AiMentorChat />
+      </AiMentorErrorBoundary>
       <EnergyCheckin open={energyModalOpen} onOpenChange={setEnergyModalOpen} />
     </>
   );

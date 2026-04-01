@@ -38,6 +38,24 @@ export async function seedNewUserData(
     type: 'welcome'
   });
 
+  const mentorProfileRef = doc(firestore, 'users', userId, 'mentorDo', 'profile');
+  await setDoc(mentorProfileRef, {
+    userId,
+    neurodivergence: [],
+    medication: '',
+    diagnoses: '',
+    limitingBeliefs: '',
+    challenges: '',
+    preferences: {
+      responseStyle: 'acolhedor',
+      preferredTone: 'calmo',
+      useShortAnswers: false,
+      attentionFocus: 'equilíbrio emocional',
+    },
+    addictions: [],
+    lastUpdated: serverTimestamp(),
+  }, { merge: true });
+
   // Example: Initial Questionnaire entry (if applicable)
   // const questionnaireRef = doc(collection(userDocRef, 'profile_questionnaires'));
   // await setDoc(questionnaireRef, { ... });

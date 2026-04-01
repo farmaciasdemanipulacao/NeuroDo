@@ -17,6 +17,8 @@ import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
+import { useFirestore, useUser, useDoc } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 type Message = {
   role: 'user' | 'assistant' | 'error';
@@ -37,6 +39,7 @@ const RETRY_DELAY_MS = 1000;
 async function chatWithMentorWithRetry(
   message: string,
   history: Message[],
+  profileContext = '',
   retryCount = 0
 ): Promise<string> {
   try {
@@ -50,6 +53,7 @@ async function chatWithMentorWithRetry(
     const result = await chatWithMentor({
       message,
       history: historyForApi,
+      profileContext,
     });
 
     return result.response;
@@ -62,7 +66,7 @@ async function chatWithMentorWithRetry(
       const delay = RETRY_DELAY_MS * Math.pow(2, retryCount); // Exponential backoff
       console.log(`[Retry] Aguardando ${delay}ms antes de tentar novamente...`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return chatWithMentorWithRetry(message, history, retryCount + 1);
+      return chatWithMentorWithRetry(message, history, profileContext, retryCount + 1);
     }
 
     throw error;
@@ -80,14 +84,29 @@ function shouldRetry(errorMessage: string): boolean {
   return retryableErrors.some(err => errorMessage.toLowerCase().includes(err.toLowerCase()));
 }
 
-export function AiMentorChat() {
-  const [open, setOpen] = useState(false);
+interface AiMentorChatProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const mentorProfileRef = user && firestore ? doc(firestore, 'users', user.uid, 'mentorDo', 'profile') : null;
+  const { data: mentorProfile } = useDoc(mentorProfileRef);
+
+  const profileContext = mentorProfile
+    ? `Perfil MentorDo do usuário: neurodivergência=${mentorProfile.neurodivergence?.join(', ') || 'não informado'}; medicação=${mentorProfile.medication || 'não informado'}; diagnósticos=${mentorProfile.diagnoses || 'não informado'}; crenças limitantes=${mentorProfile.limitingBeliefs || 'não informado'}; desafios=${mentorProfile.challenges || 'não informado'}; preferências=${mentorProfile.preferences ? JSON.stringify(mentorProfile.preferences) : 'não informado'}; vícios=${mentorProfile.addictions?.map((a: any) => `${a.name}${a.willingToChange ? ' (quer mudar)' : ''}`).join(', ') || 'não informado'}.`
+    : '';
 
   useEffect(() => {
     // Scroll to bottom quando mensagens mudam
@@ -115,13 +134,13 @@ export function AiMentorChat() {
     console.log('[AI Mentor Chat] Enviando mensagem:', { length: userMessage.length });
 
     try {
-      const response = await chatWithMentorWithRetry(userMessage, messages);
+      const result = await chatWithMentorWithRetry(userMessage, messages, profileContext);
 
-      if (!response || response.trim().length === 0) {
+      if (!result || !result.trim()) {
         throw new Error('Resposta vazia do mentor');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: result }]);
       console.log('[AI Mentor Chat] Resposta recebida com sucesso');
     } catch (error: any) {
       const errorMessage = error?.message || 'Erro desconhecido';

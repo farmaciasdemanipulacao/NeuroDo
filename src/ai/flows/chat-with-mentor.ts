@@ -55,6 +55,7 @@ const ChatMessageSchema = z.object({
 const ChatWithMentorInputSchema = z.object({
   message: z.string().describe('A mensagem do usuário para o mentor.'),
   history: z.array(ChatMessageSchema).optional().describe('O histórico da conversa para manter o contexto.'),
+  profileContext: z.string().optional().describe('Contexto adicional do perfil do usuário para o MentorDo.'),
 });
 
 export type ChatWithMentorInput = z.infer<typeof ChatWithMentorInputSchema>;
@@ -91,18 +92,33 @@ export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWi
     throw new Error('Mensagem inválida. Por favor, tente novamente.');
   }
 
-  const { message, history = [] } = validatedInput.data;
+  const { message, history = [], profileContext } = validatedInput.data;
 
   if (!message?.trim()) {
     console.warn(`[AI Mentor Warning: ${requestId}] Mensagem vazia`);
     throw new Error('Sua mensagem está vazia. Por favor, escreva algo.');
   }
 
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    ...history.map((msg) => ({ role: msg.role as 'user' | 'assistant', content: msg.content })),
-    { role: 'user', content: message },
-  ];
+  type MentorMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  };
+
+  const historyMessages: MentorMessage[] = history.map((msg) => ({
+    role: msg.role as 'user' | 'assistant',
+    content: msg.content,
+  }));
+
+  const profileContextMessages: MentorMessage[] = profileContext
+    ? ([{ role: 'system', content: `Contexto do usuário: ${profileContext}` }] as MentorMessage[])
+    : [];
+
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT } as MentorMessage,
+    ...profileContextMessages,
+    ...historyMessages,
+    { role: 'user', content: message } as MentorMessage,
+  ] as MentorMessage[];
 
   try {
     console.log(`[AI Mentor Request: ${requestId}] Enviando para OpenAI`, {

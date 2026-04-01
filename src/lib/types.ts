@@ -257,3 +257,40 @@ export interface PDIHistory {
     generatedAt: string | { toDate: () => Date };
     pdiContent: string;
 }
+
+export interface MentorDoPreferences {
+  responseStyle?: string;
+  preferredTone?: string;
+  useShortAnswers?: boolean;
+  attentionFocus?: string;
+}
+
+export interface AddictionInfo {
+  name: string;
+  frequency?: string;
+  currentIntensity?: number;
+  willingToChange?: boolean;
+  notes?: string;
+}
+
+export interface MentorDoProfile {
+  id?: string;
+  userId: string;
+  neurodivergence?: string[];
+  medication?: string;
+  diagnoses?: string;
+  limitingBeliefs?: string;
+  challenges?: string;
+  preferences?: MentorDoPreferences;
+  addictions?: AddictionInfo[];
+  lastUpdated?: string | { toDate: () => Date };
+}
+
+export interface MentorDoAdminConfig {
+  id?: string;
+  defaultPrompt?: string;
+  defaultModel?: string;
+  welcomeMessage?: string;
+  helpContacts?: string;
+  updatedAt?: string | { toDate: () => Date };
+}

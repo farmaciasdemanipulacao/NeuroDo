@@ -17,6 +17,7 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -40,6 +41,7 @@ const navItems = [
   { href: '/dashboard/plan', icon: CalendarCheck, label: 'Plano do Dia' },
   { href: '/dashboard/delegations', icon: UserCheck, label: 'Delegações' },
   { href: '/dashboard/team', icon: Users, label: 'Equipe' },
+  { href: '/dashboard/mentor', icon: Sparkles, label: 'MentorDo' },
   { href: '/dashboard/goals', icon: Target, label: 'Metas' },
   { href: '/dashboard/focus', icon: Timer, label: 'Timer de Foco' },
   { href: '/dashboard/documents', icon: FileText, label: 'Documentos' },

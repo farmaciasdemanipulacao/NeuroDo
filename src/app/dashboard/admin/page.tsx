@@ -70,6 +70,17 @@ export default function DashboardAdminPage() {
             Ajuste permissões e parâmetros administrativos para os usuários.
           </p>
         </div>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:col-span-2">
+          <h2 className="text-lg font-semibold">MentorDo</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Configure o comportamento do MentorDo, modelo padrão e mensagens de abertura para todos os usuários.
+          </p>
+          <div className="mt-4">
+            <Link href="/dashboard/admin/mentor-do">
+              <Button variant="secondary">Ir para Configuração MentorDo</Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

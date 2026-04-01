@@ -20,6 +20,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const [energyModalOpen, setEnergyModalOpen] = useState(false);
+  const [mentorOpen, setMentorOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -43,7 +44,10 @@ export default function DashboardLayout({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <Header onEnergyCheckinClick={() => setEnergyModalOpen(true)} />
+          <Header
+            onEnergyCheckinClick={() => setEnergyModalOpen(true)}
+            onMentorSOSClick={() => setMentorOpen(true)}
+          />
           <main className="flex-1 p-6 overflow-auto">
             {children}
           </main>
@@ -52,7 +56,7 @@ export default function DashboardLayout({
 
       <FloatingFocusTimer />
       <AiMentorErrorBoundary>
-        <AiMentorChat />
+        <AiMentorChat open={mentorOpen} onOpenChange={setMentorOpen} />
       </AiMentorErrorBoundary>
       <EnergyCheckin open={energyModalOpen} onOpenChange={setEnergyModalOpen} />
     </>

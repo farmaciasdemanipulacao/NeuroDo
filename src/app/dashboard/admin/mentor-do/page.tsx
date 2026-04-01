@@ -112,32 +112,40 @@ export default function MentorDoAdminPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Prompt base do MentorDo</label>
+            <label htmlFor="mentordo-defaultPrompt" className="mb-2 block text-sm font-medium text-foreground">Prompt base do MentorDo</label>
             <Textarea
+              id="mentordo-defaultPrompt"
+              name="defaultPrompt"
               value={config.defaultPrompt}
               onChange={event => handleChange('defaultPrompt', event.target.value)}
               placeholder="Defina as regras e o tom do MentorDo..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Modelo padrão</label>
+            <label htmlFor="mentordo-defaultModel" className="mb-2 block text-sm font-medium text-foreground">Modelo padrão</label>
             <Input
+              id="mentordo-defaultModel"
+              name="defaultModel"
               value={config.defaultModel}
               onChange={event => handleChange('defaultModel', event.target.value)}
               placeholder="gpt-4o-mini"
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Mensagem de boas-vindas</label>
+            <label htmlFor="mentordo-welcomeMessage" className="mb-2 block text-sm font-medium text-foreground">Mensagem de boas-vindas</label>
             <Textarea
+              id="mentordo-welcomeMessage"
+              name="welcomeMessage"
               value={config.welcomeMessage}
               onChange={event => handleChange('welcomeMessage', event.target.value)}
               placeholder="Mensagem inicial do MentorDo."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Contatos de ajuda</label>
+            <label htmlFor="mentordo-helpContacts" className="mb-2 block text-sm font-medium text-foreground">Contatos de ajuda</label>
             <Textarea
+              id="mentordo-helpContacts"
+              name="helpContacts"
               value={config.helpContacts}
               onChange={event => handleChange('helpContacts', event.target.value)}
               placeholder="Ex: contatos de suporte ou serviços de ajuda imediata."

@@ -125,64 +125,80 @@ export default function MentorProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Neurodivergência</label>
+            <label htmlFor="mentor-profile-neurodivergence" className="mb-2 block text-sm font-medium text-foreground">Neurodivergência</label>
             <Input
+              id="mentor-profile-neurodivergence"
+              name="neurodivergence"
               value={formState.neurodivergence}
               onChange={event => handleChange('neurodivergence', event.target.value)}
               placeholder="TDAH, Autismo leve, Dislexia..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Medicação</label>
+            <label htmlFor="mentor-profile-medication" className="mb-2 block text-sm font-medium text-foreground">Medicação</label>
             <Input
+              id="mentor-profile-medication"
+              name="medication"
               value={formState.medication}
               onChange={event => handleChange('medication', event.target.value)}
               placeholder="Desvenlafaxina 100mg, Lisdexanfetamina 70mg..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Diagnósticos / Laudos</label>
+            <label htmlFor="mentor-profile-diagnoses" className="mb-2 block text-sm font-medium text-foreground">Diagnósticos / Laudos</label>
             <Textarea
+              id="mentor-profile-diagnoses"
+              name="diagnoses"
               value={formState.diagnoses}
               onChange={event => handleChange('diagnoses', event.target.value)}
               placeholder="Descreva diagnósticos, laudos ou avaliações clínicas relevantes."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Crenças limitantes</label>
+            <label htmlFor="mentor-profile-limitingBeliefs" className="mb-2 block text-sm font-medium text-foreground">Crenças limitantes</label>
             <Textarea
+              id="mentor-profile-limitingBeliefs"
+              name="limitingBeliefs"
               value={formState.limitingBeliefs}
               onChange={event => handleChange('limitingBeliefs', event.target.value)}
               placeholder="Ex: 'Preciso agradar todo mundo', 'Não posso falhar'..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Desafios e dificuldades</label>
+            <label htmlFor="mentor-profile-challenges" className="mb-2 block text-sm font-medium text-foreground">Desafios e dificuldades</label>
             <Textarea
+              id="mentor-profile-challenges"
+              name="challenges"
               value={formState.challenges}
               onChange={event => handleChange('challenges', event.target.value)}
               placeholder="Descreva seus principais desafios diários."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Preferências de resposta</label>
+            <label htmlFor="mentor-profile-preferredResponseStyle" className="mb-2 block text-sm font-medium text-foreground">Preferências de resposta</label>
             <Input
+              id="mentor-profile-preferredResponseStyle"
+              name="preferredResponseStyle"
               value={formState.preferredResponseStyle}
               onChange={event => handleChange('preferredResponseStyle', event.target.value)}
               placeholder="Ex: acolhedor, direto, calmo, passo a passo..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Vícios e hábitos</label>
+            <label htmlFor="mentor-profile-addictions" className="mb-2 block text-sm font-medium text-foreground">Vícios e hábitos</label>
             <Textarea
+              id="mentor-profile-addictions"
+              name="addictions"
               value={formState.addictions}
               onChange={event => handleChange('addictions', event.target.value)}
               placeholder="Separe por ponto e vírgula: Ex: Cigarrilha; Açúcar (quer mudar); Facebook..."
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">Foco emocional / observações</label>
+            <label htmlFor="mentor-profile-additionalNotes" className="mb-2 block text-sm font-medium text-foreground">Foco emocional / observações</label>
             <Textarea
+              id="mentor-profile-additionalNotes"
+              name="additionalNotes"
               value={formState.additionalNotes}
               onChange={event => handleChange('additionalNotes', event.target.value)}
               placeholder="Ex: 'Preciso de respostas mais calmas', 'Meu foco está na regulação emocional'."

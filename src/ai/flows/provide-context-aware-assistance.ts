@@ -2,13 +2,11 @@
 
 /**
  * @fileOverview An AI mentor that provides context-aware assistance and task suggestions.
- * This implementation uses the OpenAI Chat Completions API directly with JSON mode.
+ * This implementation usa a OpenAI Responses API para maior compatibilidade.
  */
 
 import OpenAI from 'openai';
 import { z } from 'zod';
-
-// --- OpenAI Client Configuration ---
 
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
@@ -21,8 +19,6 @@ if (!apiKey) {
 } else {
   openai = new OpenAI({ apiKey });
 }
-
-// --- System Prompt for Assistance ---
 
 const SYSTEM_PROMPT = `Você é o "Mentor IA NeuroDO", um mentor pessoal para Gustavo, um CEO neurodivergente (TDAH). Sua missão é ajudá-lo a alcançar R$30.000/mês líquido até 1º de dezembro de 2026, focando nos 5 projetos principais.
 
@@ -45,39 +41,27 @@ PROTOCOLO DE ENERGIA:
 Seu output DEVE ser um objeto JSON válido, seguindo o schema fornecido, e nada mais.
 `;
 
-// --- Input/Output Schemas ---
-
 const ProvideContextAwareAssistanceInputSchema = z.object({
-  energyLevel: z
-    .number()
-    .describe("The user's current energy level (0-10)."),
+  energyLevel: z.number().describe('The user\'s current energy level (0-10).'),
   project: z.string().describe('The name of the project the user is working on.'),
-  prompt: z
-    .string()
-    .optional()
-    .describe('The specific question or prompt from the user.'),
+  prompt: z.string().optional().describe('The specific question ou prompt do usuário.'),
 });
+
 export type ProvideContextAwareAssistanceInput = z.infer<typeof ProvideContextAwareAssistanceInputSchema>;
 
 const ProvideContextAwareAssistanceOutputSchema = z.object({
   suggestion: z.string().describe('A task suggestion tailored to the user.'),
-  breakdown: z
-    .string()
-    .optional()
-    .describe('A breakdown of the suggested task into smaller, manageable chunks.'),
-  reasoning: z.string().describe('The AI mentor explains the reasoning behind the suggestion.'),
+  breakdown: z.string().optional().describe('Uma breakdown da tarefa em pequenos passos.'),
+  reasoning: z.string().describe('A IA explica o raciocínio por trás da sugestão.'),
 });
+
 export type ProvideContextAwareAssistanceOutput = z.infer<typeof ProvideContextAwareAssistanceOutputSchema>;
-
-
-// --- Main Function ---
 
 export async function provideContextAwareAssistance(
   input: ProvideContextAwareAssistanceInput
 ): Promise<ProvideContextAwareAssistanceOutput> {
-  
   if (!openai || initError) {
-    console.error("OpenAI Init Error:", initError);
+    console.error('OpenAI Init Error:', initError);
     throw new Error(`Server Configuration Error: ${initError}`);
   }
 
@@ -85,7 +69,7 @@ export async function provideContextAwareAssistance(
   if (!validatedInput.success) {
     throw new Error(`Invalid input: ${validatedInput.error.message}`);
   }
-  
+
   const { energyLevel, project, prompt } = validatedInput.data;
 
   const userPrompt = `
@@ -99,52 +83,47 @@ export async function provideContextAwareAssistance(
   `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: model,
-      messages: [
+    const response = await openai.responses.create({
+      model,
+      input: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ],
-      response_format: { type: "json_object" },
       temperature: 0.5,
+      max_output_tokens: 550,
     });
 
-    const rawOutput = response.choices[0]?.message?.content;
+    const rawOutput = response.output_text?.trim();
     if (!rawOutput) {
-      throw new Error("A API da OpenAI não retornou conteúdo.");
+      throw new Error('A API da OpenAI não retornou conteúdo.');
     }
-    
+
     try {
-      // Parse and validate the JSON output from the model
       const parsedOutput = JSON.parse(rawOutput);
       const validatedOutput = ProvideContextAwareAssistanceOutputSchema.safeParse(parsedOutput);
 
       if (!validatedOutput.success) {
-          console.error("OpenAI output validation failed", validatedOutput.error);
-          console.log("Raw AI Output that failed:", rawOutput);
-          // Instead of throwing, return a safe fallback object that the UI can handle.
-          return {
-              suggestion: "O Mentor de IA não conseguiu formular uma sugestão clara.",
-              reasoning: "A resposta da IA estava em um formato inesperado. Isso pode ser um problema temporário. Tente gerar novamente.",
-              breakdown: ""
-          };
-      }
-      return validatedOutput.data;
-
-    } catch(parsingError) {
-        console.error("Failed to parse or validate AI response:", parsingError);
-        console.log("Raw AI Output that failed:", rawOutput);
-         // Return a safe fallback if JSON.parse fails.
+        console.error('OpenAI output validation failed', validatedOutput.error); // eslint-disable-line no-console
+        console.log('Raw AI Output that failed:', rawOutput); // eslint-disable-line no-console
         return {
-            suggestion: "O Mentor de IA retornou uma resposta inválida.",
-            reasoning: "A resposta da IA não era um JSON válido, o que impediu o processamento. Tente gerar novamente.",
-            breakdown: ""
+          suggestion: 'O Mentor de IA não conseguiu formular uma sugestão clara.',
+          reasoning: 'A resposta da IA estava em um formato inesperado. Tente gerar novamente.',
+          breakdown: '',
         };
-    }
+      }
 
+      return validatedOutput.data;
+    } catch (parsingError) {
+      console.error('Failed to parse or validate AI response:', parsingError); // eslint-disable-line no-console
+      console.log('Raw AI Output that failed:', rawOutput); // eslint-disable-line no-console
+      return {
+        suggestion: 'O Mentor de IA retornou uma resposta inválida.',
+        reasoning: 'A resposta da IA não era um JSON válido, o que impediu o processamento. Tente gerar novamente.',
+        breakdown: '',
+      };
+    }
   } catch (error: any) {
-    console.error("Error communicating with OpenAI API:", error);
-    // Re-throw a user-friendly error to be caught by the component
-    throw new Error(`Ocorreu um erro ao se comunicar com o Mentor IA: ${error.message}`);
+    console.error('Error communicating with OpenAI API:', error);
+    throw new Error(`Ocorreu um erro ao se comunicar com o Mentor IA: ${error.message ?? error}`);
   }
 }

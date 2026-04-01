@@ -5,25 +5,26 @@ export type LogoVariant = 'square' | 'horizontal' | 'icon';
 
 interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: LogoVariant;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export function Logo({ className, variant = 'square', size = 'md', ...props }: LogoProps) {
   const logoSrc = variant === 'horizontal'
     ? '/logo-neurodo-horizontal-200x80.webp'
-    : '/logo-neurodo-quadrada-redimensionada.webp';
+    : variant === 'icon'
+      ? '/logo-neurodo-favicon-100x100.webp'
+      : '/logo-neurodo-quadrada-redimensionada.webp';
 
-  const baseImageClass = variant === 'horizontal'
-    ? 'w-auto'
-    : 'w-auto';
+  const baseImageClass = 'w-auto';
 
-  const sizeMap: Record<'sm'|'md'|'lg', string> = {
+  const sizeMap: Record<'sm'|'md'|'lg'|'xl', string> = {
     sm: 'h-8',
     md: 'h-10',
     lg: 'h-14',
+    xl: 'h-17',
   };
 
-  const defaultVariantSize = variant === 'horizontal' ? 'lg' : variant === 'square' ? 'md' : 'sm';
+  const defaultVariantSize = variant === 'horizontal' ? 'lg' : variant === 'icon' ? 'sm' : 'md';
   const selectedSize = size || defaultVariantSize;
 
   const imageClass = `${sizeMap[selectedSize]} ${baseImageClass}`;

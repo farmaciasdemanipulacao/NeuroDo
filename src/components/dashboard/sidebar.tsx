@@ -69,7 +69,12 @@ export function AppSidebar() {
 
   const sidebarHeader = (
     <div className="flex flex-col items-center justify-center gap-2 p-2 pt-4">
-      <Logo variant="horizontal" size="md" className="max-w-[16rem]" />
+      <div className="flex items-center justify-center group-data-[collapsible=icon]:hidden">
+        <Logo variant="horizontal" size="md" className="max-w-[16rem]" />
+      </div>
+      <div className="hidden items-center justify-center group-data-[collapsible=icon]:flex">
+        <Logo variant="icon" size="sm" className="max-w-[4rem]" />
+      </div>
     </div>
   );
 

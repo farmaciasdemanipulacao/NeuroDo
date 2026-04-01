@@ -91,6 +91,9 @@ export default {
             maint: '#6B7280',
         },
       },
+      height: {
+        17: '4.25rem',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

@@ -139,7 +139,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mb-8 flex flex-col items-center gap-2">
-        <Logo variant="horizontal" size="lg" className="max-w-[24rem]" />
+        <Logo variant="horizontal" size="xl" className="max-w-[24rem]" />
         <p className="text-muted-foreground">Seu SO para produtividade neurodivergente</p>
       </div>
 

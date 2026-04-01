@@ -10,8 +10,8 @@ interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Logo({ className, variant = 'square', size = 'md', ...props }: LogoProps) {
   const logoSrc = variant === 'horizontal'
-    ? '/logo-neurodo-horizontal.png'
-    : '/logo-neurodo-quadrada.png';
+    ? '/logo-neurodo-horizontal-200x80.webp'
+    : '/logo-neurodo-quadrada-redimensionada.webp';
 
   const baseImageClass = variant === 'horizontal'
     ? 'w-auto'

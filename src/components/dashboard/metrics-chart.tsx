@@ -49,11 +49,12 @@ export function MetricsChart() {
 
   // Build chart data: tasks completed per day for the last 7 days
   const chartData = useMemo(() => {
-    // Build a counts map first for O(n) instead of O(n*7)
+    // Build a counts map first for O(n) instead of O(n*7).
+    // scheduledDate is stored as 'YYYY-MM-DD' (see Task type), so slice(0,10) is safe.
     const countsByDate = new Map<string, number>();
     if (tasks) {
       for (const task of tasks) {
-        if (task.completed && task.scheduledDate) {
+        if (task.completed && typeof task.scheduledDate === 'string' && task.scheduledDate.length >= 10) {
           const dateKey = task.scheduledDate.slice(0, 10);
           countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
         }

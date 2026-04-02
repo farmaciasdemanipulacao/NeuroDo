@@ -51,7 +51,7 @@ export default function DashboardSettingsPage() {
   }, [user, isUserLoading, router]);
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsSavingProfile(true);
     try {
       // Update Firebase Auth display name (must be awaited)

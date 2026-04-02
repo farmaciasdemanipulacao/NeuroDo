@@ -72,30 +72,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'users', user.uid, 'preferences', 'data');
   }, [user, firestore]);
 
-  const { data: preferences } = useDoc<UserPreferences>(preferencesRef);
+  const { data: preferences, isLoading: arePrefsLoading } = useDoc<UserPreferences>(preferencesRef);
 
-  // Load energyLevel from Firestore once on first load
+  // Load energyLevel from Firestore once, after the initial fetch completes
   useEffect(() => {
-    if (!hasLoadedInitialPreferences && preferences !== undefined) {
+    if (!hasLoadedInitialPreferences && !arePrefsLoading) {
       if (preferences?.energyLevel != null) {
         setEnergyLevelState(preferences.energyLevel);
       }
       setHasLoadedInitialPreferences(true);
     }
-  }, [preferences, hasLoadedInitialPreferences]);
+  }, [preferences, arePrefsLoading, hasLoadedInitialPreferences]);
 
-  // Persist energyLevel to Firestore when it changes
+  // Persist energyLevel to Firestore when it changes, reusing the memoized ref
   const setEnergyLevel = useCallback((level: number | null) => {
     setEnergyLevelState(level);
-    if (user && firestore && level !== null) {
-      const prefsDocRef = doc(firestore, 'users', user.uid, 'preferences', 'data');
+    if (preferencesRef && level !== null && user) {
       setDocumentNonBlocking(
-        prefsDocRef,
+        preferencesRef,
         { userId: user.uid, energyLevel: level, updatedAt: new Date().toISOString() },
         { merge: true }
       );
     }
-  }, [user, firestore]);
+  }, [preferencesRef, user]);
 
   const energyLevel = energyLevelState;
 

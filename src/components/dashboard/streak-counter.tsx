@@ -2,10 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame } from 'lucide-react';
-import { useApp } from '@/hooks/use-app';
+import { useUserStats } from '@/hooks/use-user-stats';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function StreakCounter() {
-  const { streak } = useApp();
+  const { data: stats, isLoading } = useUserStats();
+  const streak = stats?.currentStreak ?? 0;
 
   return (
     <Card className="bg-gradient-to-br from-accent/20 to-transparent">
@@ -14,7 +16,11 @@ export function StreakCounter() {
         <Flame className="h-5 w-5 text-accent" />
       </CardHeader>
       <CardContent>
-        <div className="text-5xl font-bold text-accent">{streak}</div>
+        {isLoading ? (
+          <Skeleton className="h-12 w-16" />
+        ) : (
+          <div className="text-5xl font-bold text-accent">{streak}</div>
+        )}
         <p className="text-xs text-muted-foreground">dias de progresso consistente</p>
       </CardContent>
     </Card>

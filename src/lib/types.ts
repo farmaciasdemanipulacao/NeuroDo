@@ -303,6 +303,16 @@ export interface AISuggestedTask {
   reasoning: string;
 }
 
+// ── Preferences (persistido em /users/{uid}/preferences/data) ──────────────
+export interface Preference {
+  userId: string;
+  energyLevel: number | null;
+  theme: 'default' | 'hyperfocus' | 'creative' | 'night';
+  notificationsEnabled: boolean;
+  focusTimerDefault: 'sprint' | 'pomodoro' | 'deep';
+  updatedAt: string;
+}
+
 export interface NightlyReview {
   id: string;
   userId: string;

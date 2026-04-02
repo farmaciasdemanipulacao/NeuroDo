@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { usePreferences } from '@/hooks/use-preferences';
 
 // Timer configuration
 const WORK_DURATIONS = {
@@ -56,8 +57,22 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 // --- App Provider Component ---
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [energyLevel, setEnergyLevel] = useState<number | null>(null);
-  const [streak, setStreak] = useState(5);
+  const [energyLevel, _setEnergyLevel] = useState<number | null>(null);
+  const [streak, setStreak] = useState(0);
+  const { preferences, updatePreferences } = usePreferences();
+
+  // Sincronia inicial: carrega energia salva no Firestore quando preferences chegar
+  useEffect(() => {
+    if (preferences && preferences.energyLevel !== undefined && energyLevel === null) {
+      _setEnergyLevel(preferences.energyLevel);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferences]);
+
+  const setEnergyLevel = useCallback((level: number | null) => {
+    _setEnergyLevel(level);
+    updatePreferences({ energyLevel: level });
+  }, [updatePreferences]);
 
   // --- Timer State Management ---
   const [hasTimerBeenStarted, setHasTimerBeenStarted] = useState(false);

@@ -46,7 +46,12 @@ export function DailyPlanView() {
   const isLoading = isUserLoading || areTasksLoading || areGoalsLoading;
 
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  // Usa data local (não UTC) para evitar desfasagem em fusos negativos (ex: Brasil UTC-3)
+  const todayStr = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
 
   const todaysTasks = useMemo(() => {
     if (!tasks) return [];

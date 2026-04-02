@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useContext } from 'react';
+import { useRouter } from 'next/navigation';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -77,6 +78,7 @@ export function EveningReviewForm() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   const { energyLevel, setEnergyLevel } = useContext(AppContext)!;
 
   // Date strings computed no fuso local — evita desfasagem UTC no Brasil (UTC-3)

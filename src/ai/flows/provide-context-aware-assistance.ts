@@ -125,21 +125,34 @@ export async function provideContextAwareAssistance(
       return errorResponse('A resposta da IA não era um JSON válido. Tente gerar novamente.');
     }
 
-    // Normalizar nomes alternativos
-    if (!parsedOutput.suggestion) parsedOutput.suggestion = parsedOutput.sugestao || parsedOutput.tarefa || parsedOutput.task || '';
-    if (!parsedOutput.reasoning) parsedOutput.reasoning = parsedOutput.justificativa || parsedOutput.reason || parsedOutput.rationale || '';
-    if (!parsedOutput.breakdown) parsedOutput.breakdown = parsedOutput.passos || parsedOutput.steps || '';
-    if (Array.isArray(parsedOutput.suggestion)) parsedOutput.suggestion = parsedOutput.suggestion[0] ?? '';
+    // Extrair e coercir todos os campos para string (o modelo pode retornar arrays ou null)
+    const toStr = (v: any, fallbacks: any[] = []): string => {
+      const val = v ?? fallbacks.find(f => f != null && f !== '');
+      if (Array.isArray(val)) return val.map(String).join('\n- ');
+      if (val == null) return '';
+      return String(val);
+    };
 
-    const validatedOutput = ProvideContextAwareAssistanceOutputSchema.safeParse(parsedOutput);
+    const suggestion = toStr(
+      parsedOutput.suggestion,
+      [parsedOutput.sugestao, parsedOutput.tarefa, parsedOutput.task]
+    );
+    const reasoning = toStr(
+      parsedOutput.reasoning,
+      [parsedOutput.justificativa, parsedOutput.reason, parsedOutput.rationale]
+    );
+    const breakdown = toStr(
+      parsedOutput.breakdown,
+      [parsedOutput.passos, parsedOutput.steps]
+    );
 
-    if (!validatedOutput.success) {
-      console.error('[IA Dashboard] Validação falhou:', validatedOutput.error.format());
-      console.error('[IA Dashboard] Campos recebidos:', Object.keys(parsedOutput));
-      return errorResponse(`Formato inesperado. Campos recebidos: ${Object.keys(parsedOutput).join(', ')}`);
+    if (!suggestion) {
+      console.error('[IA Dashboard] Sem conteúdo de sugestão. Campos:', Object.keys(parsedOutput));
+      console.error('[IA Dashboard] Raw:', rawOutput);
+      return errorResponse(`Sem sugestão na resposta. Campos recebidos: ${Object.keys(parsedOutput).join(', ')}`);
     }
 
-    return validatedOutput.data;
+    return { suggestion, reasoning, breakdown };
   } catch (error: any) {
     console.error('[IA Dashboard] Erro ao chamar OpenAI:', error);
     return errorResponse(`Erro ao chamar OpenAI: ${error.message ?? error}`);

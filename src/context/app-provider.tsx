@@ -1,6 +1,9 @@
 'use client';
 
 import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { doc } from 'firebase/firestore';
+import { useFirestore, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import type { UserPreferences } from '@/lib/types';
 
 // Timer configuration
 const WORK_DURATIONS = {
@@ -56,8 +59,45 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 // --- App Provider Component ---
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [energyLevel, setEnergyLevel] = useState<number | null>(null);
-  const [streak, setStreak] = useState(5);
+  const [energyLevel, setEnergyLevelState] = useState<number | null>(null);
+  const [streak, setStreak] = useState(0);
+
+  // ── Firestore preferences sync ──────────────────────────────────────────────
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const prefsRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid, 'preferences', 'data');
+  }, [user, firestore]);
+
+  const { data: savedPrefs } = useDoc<UserPreferences>(prefsRef);
+
+  // Load energy level from Firestore once on first data arrival
+  const [energyInitialized, setEnergyInitialized] = useState(false);
+  useEffect(() => {
+    if (!energyInitialized && savedPrefs !== null && savedPrefs !== undefined) {
+      if (savedPrefs.energyLevel != null) {
+        setEnergyLevelState(savedPrefs.energyLevel);
+      }
+      setEnergyInitialized(true);
+    }
+  }, [savedPrefs, energyInitialized]);
+
+  // Wrapper that persists energy level to Firestore
+  const setEnergyLevel = useCallback(
+    (level: number | null) => {
+      setEnergyLevelState(level);
+      if (prefsRef && user) {
+        setDocumentNonBlocking(
+          prefsRef,
+          { energyLevel: level, userId: user.uid, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      }
+    },
+    [prefsRef, user]
+  );
 
   // --- Timer State Management ---
   const [hasTimerBeenStarted, setHasTimerBeenStarted] = useState(false);
@@ -156,7 +196,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       resetTimer,
       skipToNextMode
     }),
-    [energyLevel, streak, hasTimerBeenStarted, timerMode, workMode, secondsLeft, duration, isActive, cycles, toggleTimer, resetTimer, skipToNextMode]
+    [energyLevel, setEnergyLevel, streak, hasTimerBeenStarted, timerMode, workMode, secondsLeft, duration, isActive, cycles, toggleTimer, resetTimer, skipToNextMode]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

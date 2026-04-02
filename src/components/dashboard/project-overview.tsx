@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
 import { Rocket, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
@@ -62,8 +61,8 @@ export function ProjectOverview() {
       <Card className="flex flex-col col-span-1 md:col-span-2 lg:col-span-3">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className={cn("p-2 rounded-lg", featuredProject.tailwindColor ? `bg-${featuredProject.tailwindColor}/20` : 'bg-primary/20')}>
-              <Rocket className={cn("h-6 w-6", featuredProject.tailwindColor ? `text-${featuredProject.tailwindColor}` : 'text-primary')} />
+            <div className="p-2 rounded-lg" style={{ backgroundColor: featuredProject.color ? `${featuredProject.color}33` : undefined }}>
+              <Rocket className="h-6 w-6" style={{ color: featuredProject.color ?? undefined }} />
             </div>
             <div>
               <CardTitle className="text-2xl">{featuredProject.name}</CardTitle>
@@ -113,7 +112,7 @@ export function ProjectOverview() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-base font-semibold">{project.name}</CardTitle>
-                  <Rocket className={cn("h-5 w-5", project.tailwindColor ? `text-${project.tailwindColor}` : 'text-primary')} />
+                  <Rocket className="h-5 w-5" style={{ color: project.color ?? undefined }} />
                 </div>
               </CardHeader>
               <CardContent>

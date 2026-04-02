@@ -261,7 +261,7 @@ export interface PDIHistory {
 export interface UserPreferences {
   id?: string;
   userId: string;
-  energyLevel?: number | null;
+  energyLevel?: number;
   updatedAt?: string;
 }
 

@@ -13,8 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { usePreferences } from '@/hooks/use-preferences';
 import { useApp } from '@/hooks/use-app';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 
 export default function DashboardSettingsPage() {
@@ -54,11 +54,11 @@ export default function DashboardSettingsPage() {
     if (!user) return;
     setIsSavingProfile(true);
     try {
-      // Update Firebase Auth display name
+      // Update Firebase Auth display name (must be awaited)
       await updateProfile(user, { displayName });
-      // Update user document in Firestore
+      // Update user document in Firestore (non-blocking for better UX)
       const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, { displayName, updatedAt: new Date().toISOString() });
+      updateDocumentNonBlocking(userDocRef, { displayName, updatedAt: new Date().toISOString() });
       toast({ title: 'Perfil atualizado!', description: 'Seu nome foi salvo com sucesso.' });
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });

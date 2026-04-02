@@ -49,13 +49,22 @@ export function MetricsChart() {
 
   // Build chart data: tasks completed per day for the last 7 days
   const chartData = useMemo(() => {
+    // Build a counts map first for O(n) instead of O(n*7)
+    const countsByDate = new Map<string, number>();
+    if (tasks) {
+      for (const task of tasks) {
+        if (task.completed && task.scheduledDate) {
+          const dateKey = task.scheduledDate.slice(0, 10);
+          countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
+        }
+      }
+    }
     const days: { date: string; label: string; tasks: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const day = startOfDay(subDays(new Date(), i));
       const dayStr = format(day, 'yyyy-MM-dd');
       const label = format(day, 'EEE', { locale: ptBR });
-      const count = tasks?.filter(t => t.completed && t.scheduledDate?.startsWith(dayStr)).length ?? 0;
-      days.push({ date: dayStr, label, tasks: count });
+      days.push({ date: dayStr, label, tasks: countsByDate.get(dayStr) ?? 0 });
     }
     return days;
   }, [tasks]);

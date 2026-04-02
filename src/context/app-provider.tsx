@@ -61,6 +61,7 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [energyLevelState, setEnergyLevelState] = useState<number | null>(null);
   const [streak, setStreak] = useState(0);
+  const [hasLoadedInitialPreferences, setHasLoadedInitialPreferences] = useState(false);
 
   // --- Firebase integration for preferences persistence ---
   const { user } = useUser();
@@ -73,12 +74,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const { data: preferences } = useDoc<UserPreferences>(preferencesRef);
 
-  // Load energyLevel from Firestore on startup (only if user hasn't set it this session)
+  // Load energyLevel from Firestore once on first load
   useEffect(() => {
-    if (preferences?.energyLevel != null && energyLevelState === null) {
-      setEnergyLevelState(preferences.energyLevel);
+    if (!hasLoadedInitialPreferences && preferences !== undefined) {
+      if (preferences?.energyLevel != null) {
+        setEnergyLevelState(preferences.energyLevel);
+      }
+      setHasLoadedInitialPreferences(true);
     }
-  }, [preferences, energyLevelState]);
+  }, [preferences, hasLoadedInitialPreferences]);
 
   // Persist energyLevel to Firestore when it changes
   const setEnergyLevel = useCallback((level: number | null) => {

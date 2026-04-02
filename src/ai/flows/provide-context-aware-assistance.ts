@@ -83,17 +83,18 @@ export async function provideContextAwareAssistance(
   `;
 
   try {
-    const response = await openai.responses.create({
+    const response = await openai.chat.completions.create({
       model,
-      input: [
+      messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.5,
-      max_output_tokens: 550,
+      max_tokens: 550,
+      response_format: { type: 'json_object' },
     });
 
-    const rawOutput = response.output_text?.trim();
+    const rawOutput = response.choices[0]?.message?.content?.trim();
     if (!rawOutput) {
       throw new Error('A API da OpenAI não retornou conteúdo.');
     }

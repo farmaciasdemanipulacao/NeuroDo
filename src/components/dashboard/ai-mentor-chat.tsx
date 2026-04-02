@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -17,7 +17,7 @@ import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
-import { useFirestore, useUser, useDoc } from '@/firebase';
+import { FirebaseContext, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 type Message = {
@@ -99,8 +99,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   const [hasError, setHasError] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const { user } = useUser();
+  const firebaseCtx = useContext(FirebaseContext);
+  const firestore = firebaseCtx?.firestore ?? null;
+  const user = firebaseCtx?.user ?? null;
   const mentorProfileRef = user && firestore ? doc(firestore, 'users', user.uid, 'mentorDo', 'profile') : null;
   const { data: mentorProfile } = useDoc(mentorProfileRef);
 

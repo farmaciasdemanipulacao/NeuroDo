@@ -294,3 +294,26 @@ export interface MentorDoAdminConfig {
   helpContacts?: string;
   updatedAt?: string | { toDate: () => Date };
 }
+
+export interface AISuggestedTask {
+  content: string;
+  priority: 'high' | 'medium' | 'low';
+  scheduledTime: 'Manhã' | 'Tarde' | 'Noite';
+  estimatedMinutes: number;
+  reasoning: string;
+}
+
+export interface NightlyReview {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  energyLevel: number;
+  tasksCompleted: number;
+  tasksTotal: number;
+  tasksSummary: { id: string; content: string; completed: boolean }[];
+  aiAnalysis: string;
+  aiEnergyPattern: string;
+  aiSuggestedTasks: AISuggestedTask[];
+  aiMotivationalNote: string;
+  createdAt: string; // ISO string
+}

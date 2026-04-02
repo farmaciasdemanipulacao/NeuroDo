@@ -36,52 +36,35 @@ const quickActions = [
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
+const RETRYABLE_CODES = ['TIMEOUT', 'RATE_LIMIT', 'OPENAI_SERVER_ERROR'];
+
 async function chatWithMentorWithRetry(
   message: string,
   history: Message[],
   profileContext = '',
   retryCount = 0
 ): Promise<string> {
-  try {
-    const historyForApi = history
-      .filter(m => m.role !== 'error')
-      .map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
+  const historyForApi = history
+    .filter(m => m.role !== 'error')
+    .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const result = await chatWithMentor({
-      message,
-      history: historyForApi,
-      profileContext,
-    });
+  const result = await chatWithMentor({ message, history: historyForApi, profileContext });
 
-    return result.response;
-  } catch (error: any) {
-    const errorMessage = error?.message || 'Erro desconhecido ao consultar mentor';
-    console.error(`[Retry ${retryCount}/${MAX_RETRIES}] Erro no chat:`, errorMessage);
+  // Novo padrão: chatWithMentor retorna objeto com error em vez de throw
+  if (result.error) {
+    console.error(`[MentorDo Retry ${retryCount}/${MAX_RETRIES}] errorCode=${result.errorCode} — ${result.error}`);
 
-    // Retry apenas para erros de rede e timeout, não para erros de validação
-    if (retryCount < MAX_RETRIES && shouldRetry(errorMessage)) {
-      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount); // Exponential backoff
-      console.log(`[Retry] Aguardando ${delay}ms antes de tentar novamente...`);
+    const canRetry = retryCount < MAX_RETRIES && RETRYABLE_CODES.includes(result.errorCode ?? '');
+    if (canRetry) {
+      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
       await new Promise(resolve => setTimeout(resolve, delay));
       return chatWithMentorWithRetry(message, history, profileContext, retryCount + 1);
     }
 
-    throw error;
+    throw new Error(result.error);
   }
-}
 
-function shouldRetry(errorMessage: string): boolean {
-  const retryableErrors = [
-    'timeout',
-    'ECONNREFUSED',
-    'temporariamente indisponível',
-    'Muitas requisições',
-    'levou muito tempo',
-  ];
-  return retryableErrors.some(err => errorMessage.toLowerCase().includes(err.toLowerCase()));
+  return result.response;
 }
 
 interface AiMentorChatProps {

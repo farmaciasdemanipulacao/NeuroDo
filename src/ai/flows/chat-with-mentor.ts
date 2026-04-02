@@ -1,39 +1,32 @@
 'use server';
 
 /**
- * @fileOverview Interface para o chat do Mentor IA utilizando a OpenAI Responses API.
+ * @fileOverview Interface para o chat do Mentor IA utilizando a OpenAI Chat Completions API.
  * Este arquivo atua como um Server Action para o frontend do Next.js.
+ *
+ * IMPORTANTE: erros são retornados como objeto { error, errorCode } em vez de lançados,
+ * porque o Next.js oculta mensagens de exceções em produção.
  */
 
 import OpenAI from 'openai';
 import { z } from 'zod';
 
 const apiKey = process.env.OPENAI_API_KEY;
-const vectorStoreId = process.env.NEURODO_VECTOR_STORE_ID;
 const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
 
 let openai: OpenAI | null = null;
 let initError: string | null = null;
 
-// Log detalhado de inicialização
 if (!apiKey) {
-  initError = 'CRITICAL: A variável de ambiente OPENAI_API_KEY não está definida no servidor.';
-  console.error(`[AI Mentor Init Error] ${initError}`);
-  console.error('[AI Mentor Init Debug]', {
-    env: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    availableEnv: Object.keys(process.env).filter(k => k.includes('OPENAI') || k.includes('NEURODO')),
-  });
+  initError = 'OPENAI_API_KEY não está definida nas variáveis de ambiente do servidor.';
+  console.error('[MentorDo] ERRO DE CONFIGURAÇÃO:', initError);
 } else {
   try {
     openai = new OpenAI({ apiKey });
-    console.log('[AI Mentor] OpenAI inicializado com sucesso', {
-      model,
-      timestamp: new Date().toISOString(),
-    });
+    console.log('[MentorDo] OpenAI inicializado com sucesso. Modelo:', model);
   } catch (error: any) {
-    initError = `Erro ao inicializar OpenAI: ${error?.message}`;
-    console.error(`[AI Mentor Init Error] ${initError}`, error);
+    initError = `Falha ao inicializar OpenAI: ${error?.message}`;
+    console.error('[MentorDo] ERRO DE INICIALIZAÇÃO:', initError);
   }
 }
 
@@ -43,7 +36,7 @@ REGRAS DE INTERAÇÃO (OBRIGATÓRIAS):
 1.  **SEJA DIRETO E ACIONÁVEL**: Forneça respostas claras, calmas e práticas.
 2.  **FOCO NO PRÓXIMO PASSO**: Quebre tarefas complexas em micro-passos simples.
 3.  **LINGUAGEM EMPÁTICA**: Use um tom de apoio. Nunca use a palavra "falha"; prefira "ajuste de rota" ou "aprendizado".
-4.  **USE SEU CONHECIMENTO**: Você tem acesso a documentos sobre os projetos e a vida de Gustavo via 'file_search'. Suas respostas DEVEM considerar esse contexto para enriquecer suas respostas. Os projetos principais são: ENVOX, FARMÁCIAS, GERAÇÃO PJ, FELIZMENTE e INFLUENCERS.
+4.  **CONTEXTUALIZE**: Os projetos principais são: ENVOX, FARMÁCIAS, GERAÇÃO PJ, FELIZMENTE e INFLUENCERS.
 5.  **SEJA CONCISO**: Responda de forma curta e direta, sem se alongar.
 `;
 
@@ -53,169 +46,96 @@ const ChatMessageSchema = z.object({
 });
 
 const ChatWithMentorInputSchema = z.object({
-  message: z.string().describe('A mensagem do usuário para o mentor.'),
-  history: z.array(ChatMessageSchema).optional().describe('O histórico da conversa para manter o contexto.'),
-  profileContext: z.string().optional().describe('Contexto adicional do perfil do usuário para o MentorDo.'),
+  message: z.string(),
+  history: z.array(ChatMessageSchema).optional(),
+  profileContext: z.string().optional(),
 });
 
 export type ChatWithMentorInput = z.infer<typeof ChatWithMentorInputSchema>;
 
-const ChatWithMentorOutputSchema = z.object({
-  response: z.string().describe('A resposta do mentor.'),
-});
-
-export type ChatWithMentorOutput = z.infer<typeof ChatWithMentorOutputSchema>;
+export type ChatWithMentorOutput =
+  | { response: string; error?: never; errorCode?: never }
+  | { response?: never; error: string; errorCode: string };
 
 export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWithMentorOutput> {
-  const requestId = `mentor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const startTime = Date.now();
+  const requestId = `mentor-${Date.now()}`;
+  console.log(`[MentorDo:${requestId}] Iniciando. Modelo: ${model}. OpenAI pronto: ${!!openai}`);
 
-  console.log(`[AI Mentor Request: ${requestId}] Iniciando processamento`, {
-    timestamp: new Date().toISOString(),
-  });
-
-  // Verificação de inicialização
+  // Retorna erro de configuração (visível em produção via objeto retornado)
   if (!openai || initError) {
-    const errorMsg = `Servidor não configurado adequadamente: ${initError}`;
-    console.error(`[AI Mentor Error: ${requestId}] ${errorMsg}`, {
-      duration: Date.now() - startTime,
-      timestamp: new Date().toISOString(),
-    });
-    throw new Error(errorMsg);
+    const msg = initError || 'OpenAI não inicializado por motivo desconhecido.';
+    console.error(`[MentorDo:${requestId}] Erro de configuração:`, msg);
+    return { error: `Configuração do servidor: ${msg}`, errorCode: 'INIT_ERROR' };
   }
 
-  // Validação de entrada
-  const validatedInput = ChatWithMentorInputSchema.safeParse(input);
-  if (!validatedInput.success) {
-    const validationError = `Entrada inválida: ${validatedInput.error.message}`;
-    console.warn(`[AI Mentor Warning: ${requestId}] ${validationError}`);
-    throw new Error('Mensagem inválida. Por favor, tente novamente.');
+  const validated = ChatWithMentorInputSchema.safeParse(input);
+  if (!validated.success) {
+    return { error: 'Mensagem inválida. Por favor, tente novamente.', errorCode: 'VALIDATION_ERROR' };
   }
 
-  const { message, history = [], profileContext } = validatedInput.data;
+  const { message, history = [], profileContext } = validated.data;
 
   if (!message?.trim()) {
-    console.warn(`[AI Mentor Warning: ${requestId}] Mensagem vazia`);
-    throw new Error('Sua mensagem está vazia. Por favor, escreva algo.');
+    return { error: 'Sua mensagem está vazia.', errorCode: 'EMPTY_MESSAGE' };
   }
 
-  type MentorMessage = {
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-  };
+  type MsgRole = { role: 'system' | 'user' | 'assistant'; content: string };
 
-  const historyMessages: MentorMessage[] = history.map((msg) => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-  }));
+  const messages: MsgRole[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...(profileContext ? [{ role: 'system' as const, content: `Contexto do usuário: ${profileContext}` }] : []),
+    ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    { role: 'user', content: message },
+  ];
 
-  const profileContextMessages: MentorMessage[] = profileContext
-    ? ([{ role: 'system', content: `Contexto do usuário: ${profileContext}` }] as MentorMessage[])
-    : [];
-
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT } as MentorMessage,
-    ...profileContextMessages,
-    ...historyMessages,
-    { role: 'user', content: message } as MentorMessage,
-  ] as MentorMessage[];
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
-    console.log(`[AI Mentor Request: ${requestId}] Enviando para OpenAI`, {
-      messageCount: messages.length,
-      model,
-      timestamp: new Date().toISOString(),
-    });
+    console.log(`[MentorDo:${requestId}] Chamando OpenAI. Mensagens no histórico: ${messages.length}`);
 
-    const request = {
+    const res = await openai.chat.completions.create({
       model,
       messages,
       temperature: 0.5,
       max_tokens: 512,
-    };
-
-    // Timeout de 30 segundos para a requisição
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-    try {
-      const response = await openai.chat.completions.create(request as any);
-      clearTimeout(timeoutId);
-
-      const responseMessage = response.choices[0]?.message?.content?.trim();
-
-      if (!responseMessage) {
-        console.warn(`[AI Mentor Warning: ${requestId}] OpenAI retornou resposta vazia`, {
-          choicesCount: response.choices.length,
-          timestamp: new Date().toISOString(),
-        });
-        return {
-          response: 'Desculpe, não consegui formular uma resposta. Tente novamente em alguns instantes.',
-        };
-      }
-
-      const parsed = ChatWithMentorOutputSchema.safeParse({ response: responseMessage });
-      if (!parsed.success) {
-        console.warn(`[AI Mentor Warning: ${requestId}] Falha na validação de saída`, {
-          error: parsed.error.message,
-          timestamp: new Date().toISOString(),
-        });
-        // Mesmo com erro de validação, retornamos a resposta da IA
-        return { response: responseMessage };
-      }
-
-      console.log(`[AI Mentor Success: ${requestId}] Resposta obtida com sucesso`, {
-        duration: Date.now() - startTime,
-        responseLength: responseMessage.length,
-        timestamp: new Date().toISOString(),
-      });
-
-      return parsed.data;
-    } catch (abortError: any) {
-      clearTimeout(timeoutId);
-      if (abortError.name === 'AbortError') {
-        const msg = 'A resposta do mentor levou muito tempo. Tente novamente.';
-        console.error(`[AI Mentor Error: ${requestId}] Timeout (30s)`, {
-          duration: Date.now() - startTime,
-          timestamp: new Date().toISOString(),
-        });
-        throw new Error(msg);
-      }
-      throw abortError;
-    }
-  } catch (error: any) {
-    console.error(`[AI Mentor Error: ${requestId}] Erro na API OpenAI`, {
-      errorMessage: error?.message,
-      errorCode: error?.code,
-      errorStatus: error?.status,
-      duration: Date.now() - startTime,
-      timestamp: new Date().toISOString(),
     });
 
-    // Tratamento específico de erros
-    if (error?.code === 'ECONNREFUSED' || error?.message?.includes('ECONNREFUSED')) {
-      throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão com a internet.');
+    clearTimeout(timeoutId);
+
+    const text = res.choices[0]?.message?.content?.trim();
+    if (!text) {
+      console.warn(`[MentorDo:${requestId}] OpenAI retornou resposta vazia.`);
+      return { error: 'O mentor não gerou uma resposta. Tente novamente.', errorCode: 'EMPTY_RESPONSE' };
     }
 
-    if (error?.status === 401 || error?.message?.includes('401')) {
-      throw new Error('Chave de API inválida ou expirada. Entre em contato com o administrador.');
-    }
+    console.log(`[MentorDo:${requestId}] Sucesso. Tamanho da resposta: ${text.length} chars`);
+    return { response: text };
 
-    if (error?.status === 429 || error?.message?.includes('429')) {
-      throw new Error('Muitas requisições. Aguarde um momento e tente novamente.');
-    }
-
-    if (error?.status >= 500 || error?.message?.includes('500')) {
-      throw new Error('O servidor de IA está temporariamente indisponível. Tente novamente em alguns instantes.');
-    }
+  } catch (error: any) {
+    clearTimeout(timeoutId);
 
     if (error?.name === 'AbortError') {
-      throw new Error('A resposta levou muito tempo. Tente novamente.');
+      console.error(`[MentorDo:${requestId}] Timeout (30s).`);
+      return { error: 'O mentor demorou demais para responder. Tente novamente.', errorCode: 'TIMEOUT' };
     }
 
-    // Erro genérico com contexto
-    throw new Error(
-      'Desculpe, ocorreu um problema ao consultar o mentor. Tente novamente em alguns instantes.'
-    );
+    const status = error?.status ?? error?.response?.status;
+    console.error(`[MentorDo:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
+
+    if (status === 401) {
+      return { error: 'OPENAI_API_KEY inválida ou expirada. Verifique as variáveis de ambiente no Vercel.', errorCode: 'INVALID_API_KEY' };
+    }
+    if (status === 429) {
+      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
+    }
+    if (status === 500 || status === 503) {
+      return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
+    }
+
+    return {
+      error: `Erro ao consultar o mentor (${error?.message ?? 'desconhecido'}). Verifique os logs do Vercel.`,
+      errorCode: 'UNKNOWN_ERROR',
+    };
   }
 }

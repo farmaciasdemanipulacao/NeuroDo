@@ -317,3 +317,10 @@ export interface NightlyReview {
   aiMotivationalNote: string;
   createdAt: string; // ISO string
 }
+
+export interface UserPreferences {
+  userId: string;
+  energyLevel?: number | null;
+  theme?: string;
+  updatedAt?: string | { toDate: () => Date };
+}

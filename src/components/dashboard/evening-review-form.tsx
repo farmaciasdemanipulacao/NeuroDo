@@ -70,7 +70,6 @@ export function EveningReviewForm() {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const { energyLevel, setEnergyLevel } = useContext(AppContext)!;
-  const firestore = useFirestore();
   const { user } = useUser();
 
   // Date strings computed inside the component so they stay correct across midnight

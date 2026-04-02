@@ -128,7 +128,7 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.6,
-      max_tokens: 900,
+      max_tokens: 1200,
       response_format: { type: 'json_object' },
     });
 
@@ -141,7 +141,7 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
     const validatedOutput = OutputSchema.safeParse(parsed);
 
     if (!validatedOutput.success) {
-      console.error('Validação do output falhou:', validatedOutput.error);
+      console.error('Output validation failed:', validatedOutput.error);
       return {
         dayAnalysis: 'O Mentor IA não conseguiu analisar o dia agora. Tente novamente.',
         energyPattern: 'Não foi possível analisar o padrão de energia.',
@@ -152,7 +152,7 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
 
     return validatedOutput.data;
   } catch (error: any) {
-    console.error('Erro ao chamar OpenAI:', error);
+    console.error('Error calling OpenAI:', error);
     throw new Error(`Erro ao gerar revisão noturna: ${error.message ?? error}`);
   }
 }

@@ -58,9 +58,6 @@ const priorityColor: Record<AISuggestedTask['priority'], string> = {
   low: 'bg-green-500/20 text-green-400 border-green-500/30',
 };
 
-const todayStr = new Date().toISOString().split('T')[0];
-const tomorrowStr = addDays(new Date(), 1).toISOString().split('T')[0];
-
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   return format(new Date(year, month - 1, day), "EEEE, d 'de' MMMM", { locale: ptBR });
@@ -74,8 +71,9 @@ export function EveningReviewForm() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  // Local energy slider state (used if energyLevel not yet set in context)
-  const [localEnergy, setLocalEnergy] = useState<number | null>(null);
+  // Date strings computed inside the component so they stay correct across midnight
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const tomorrowStr = useMemo(() => addDays(new Date(), 1).toISOString().split('T')[0], []);
 
   // AI result state
   const [aiResult, setAiResult] = useState<GenerateNightlyReviewOutput | null>(null);
@@ -101,7 +99,7 @@ export function EveningReviewForm() {
     return allTasks.filter(
       (task) => task.scheduledDate && task.scheduledDate.startsWith(todayStr)
     );
-  }, [allTasks]);
+  }, [allTasks, todayStr]);
 
   const tasksCompleted = useMemo(
     () => todaysTasks.filter((t) => t.completed).length,
@@ -109,9 +107,6 @@ export function EveningReviewForm() {
   );
   const tasksTotal = todaysTasks.length;
   const completionPct = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0;
-
-  // Effective energy: prefer context value, fall back to local slider
-  const effectiveEnergy = energyLevel ?? localEnergy;
 
   // ── Progress bar color ─────────────────────────────────────────────────────
   const progressColor =
@@ -123,12 +118,12 @@ export function EveningReviewForm() {
 
   // ── Handle AI analysis ─────────────────────────────────────────────────────
   async function handleAnalyze() {
-    if (effectiveEnergy === null) return;
+    if (energyLevel === null) return;
 
     setIsGenerating(true);
     try {
       const result = await generateNightlyReview({
-        energyLevel: effectiveEnergy,
+        energyLevel: energyLevel,
         tasksCompleted,
         tasksTotal,
         tasksSummary: todaysTasks.map((t) => ({
@@ -174,7 +169,7 @@ export function EveningReviewForm() {
       {
         userId: user.uid,
         date: todayStr,
-        energyLevel: effectiveEnergy,
+        energyLevel: energyLevel ?? 5,
         tasksCompleted,
         tasksTotal,
         tasksSummary: todaysTasks.map((t) => ({
@@ -356,18 +351,15 @@ export function EveningReviewForm() {
                 <Zap className="h-5 w-5 text-yellow-400" />
                 <span className="text-sm font-medium">Como foi sua energia hoje?</span>
                 <span className="ml-auto text-lg font-bold text-primary">
-                  {localEnergy ?? 5}/10
+                  {energyLevel ?? 5}/10
                 </span>
               </div>
               <Slider
                 min={0}
                 max={10}
                 step={1}
-                value={[localEnergy ?? 5]}
-                onValueChange={([val]) => {
-                  setLocalEnergy(val);
-                  setEnergyLevel(val);
-                }}
+                value={[energyLevel ?? 5]}
+                onValueChange={([val]) => setEnergyLevel(val)}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -384,7 +376,7 @@ export function EveningReviewForm() {
         <Button
           className="w-full"
           onClick={handleAnalyze}
-          disabled={isGenerating || effectiveEnergy === null}
+          disabled={isGenerating || energyLevel === null}
         >
           {isGenerating ? (
             <>
@@ -479,6 +471,7 @@ export function EveningReviewForm() {
                     <textarea
                       value={task.editedContent}
                       onChange={(e) => updateContent(index, e.target.value)}
+                      aria-label={`Editar tarefa sugerida ${index + 1}`}
                       className="w-full bg-transparent text-sm resize-none border-none outline-none focus:ring-0 p-0 min-h-[1.5rem]"
                       rows={2}
                     />

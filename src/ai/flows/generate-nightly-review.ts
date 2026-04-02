@@ -137,17 +137,105 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       throw new Error('A API da OpenAI não retornou conteúdo.');
     }
 
-    const parsed = JSON.parse(rawOutput);
-    const validatedOutput = OutputSchema.safeParse(parsed);
+    // Tentativas robustas de parsing: JSON direto, bloco JSON, ou parsing heurístico
+    let parsed: any = null;
+    const parseErrors: string[] = [];
 
+    // 1) JSON direto
+    try {
+      parsed = JSON.parse(rawOutput);
+    } catch (err) {
+      parseErrors.push(`direct-json: ${(err as Error).message}`);
+    }
+
+    // 2) Extrair bloco JSON entre chaves e tentar parsear
+    if (!parsed) {
+      const jsonBlockMatch = rawOutput.match(/\{[\s\S]*\}/);
+      if (jsonBlockMatch) {
+        try {
+          parsed = JSON.parse(jsonBlockMatch[0]);
+        } catch (err) {
+          parseErrors.push(`block-json: ${(err as Error).message}`);
+        }
+      }
+    }
+
+    // 3) Se ainda não parseou, procurar por um array de sugestões e construir um objeto
+    if (!parsed) {
+      try {
+        // Tentativa heurística: procurar linhas numeradas com tarefas
+        const lines = rawOutput.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const taskLines = lines.filter(l => /^\d+\.|^-\s|^•\s/.test(l));
+        if (taskLines.length > 0) {
+          const suggestedTasks: any[] = taskLines.slice(0, 3).map((l) => {
+            // remover marcador inicial
+            const text = l.replace(/^\d+\.|^-\s|^•\s/, '').trim();
+            // heurística simples: procurar (Manhã|Tarde|Noite) e minutos
+            const scheduledMatch = text.match(/(Manhã|Tarde|Noite)/i);
+            const minutesMatch = text.match(/(\d+)\s?min/);
+            const priority = /alta|prioridade alta|alta prioridade|importante/i.test(text)
+              ? 'high'
+              : /baixa|prioridade baixa/i.test(text)
+              ? 'low'
+              : 'medium';
+            return {
+              content: text,
+              priority,
+              scheduledTime: scheduledMatch ? (scheduledMatch[1].charAt(0).toUpperCase() + scheduledMatch[1].slice(1).toLowerCase()) : 'Tarde',
+              estimatedMinutes: minutesMatch ? parseInt(minutesMatch[1], 10) : 25,
+              reasoning: '',
+            };
+          });
+
+          parsed = {
+            dayAnalysis: lines.slice(0, 3).join(' '),
+            energyPattern: '',
+            suggestedTasks,
+            motivationalNote: lines.slice(-1)[0] || '',
+          };
+        }
+      } catch (err) {
+        parseErrors.push(`heuristic: ${(err as Error).message}`);
+      }
+    }
+
+    // 4) Se parseou, mas keys podem ter nomes alternativos — normalizar
+    if (parsed) {
+      // normalizar nomes alternativos
+      if (!parsed.suggestedTasks && parsed.suggestions) parsed.suggestedTasks = parsed.suggestions;
+      if (!parsed.suggestedTasks && parsed.tasks) parsed.suggestedTasks = parsed.tasks;
+      if (!parsed.dayAnalysis && parsed.analysis) parsed.dayAnalysis = parsed.analysis;
+      if (!parsed.motivationalNote && parsed.note) parsed.motivationalNote = parsed.note;
+
+      // Se suggestedTasks for stringified JSON, tentar parsear
+      if (typeof parsed.suggestedTasks === 'string') {
+        try {
+          parsed.suggestedTasks = JSON.parse(parsed.suggestedTasks);
+        } catch (err) {
+          // não fatal — manter como está
+          parseErrors.push(`string-suggestedTasks-parse: ${(err as Error).message}`);
+        }
+      }
+
+      // Coercionar cada sugestão para o shape esperado
+      if (Array.isArray(parsed.suggestedTasks)) {
+        parsed.suggestedTasks = parsed.suggestedTasks.slice(0, 3).map((t: any) => ({
+          content: t.content || t.title || String(t).slice(0, 200),
+          priority: (t.priority === 'high' || /alto|alta/i.test(t.priority || '')) ? 'high' : (t.priority === 'low' || /baixa|baixo/i.test(t.priority || '')) ? 'low' : 'medium',
+          scheduledTime: t.scheduledTime || t.when || 'Tarde',
+          estimatedMinutes: Number(t.estimatedMinutes || t.estimated_time || t.minutes) || 25,
+          reasoning: t.reasoning || t.why || '',
+        }));
+      }
+    }
+
+    // Validar e retornar ou lançar erro com detalhes para debug
+    const validatedOutput = OutputSchema.safeParse(parsed || {});
     if (!validatedOutput.success) {
       console.error('Output validation failed:', validatedOutput.error);
-      return {
-        dayAnalysis: 'O Mentor IA não conseguiu analisar o dia agora. Tente novamente.',
-        energyPattern: 'Não foi possível analisar o padrão de energia.',
-        suggestedTasks: [],
-        motivationalNote: 'Amanhã é um novo começo. 💚',
-      };
+      console.error('Raw model output:', rawOutput);
+      console.error('Parse attempts:', parseErrors);
+      throw new Error('O Mentor IA retornou um formato inesperado — verifique os logs do servidor e tente novamente.');
     }
 
     return validatedOutput.data;

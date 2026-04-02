@@ -24,24 +24,25 @@ export function TaskSuggestions() {
 
     setIsLoading(true);
     setSuggestions(null);
-    try {
-      const result = await provideContextAwareAssistance({
-        energyLevel: energyLevel,
-        project: projects[0].name, // Example project
-        prompt: 'Sugira proativamente uma tarefa para mim com base no meu nível de energia e no projeto atual.',
+    const result = await provideContextAwareAssistance({
+      energyLevel: energyLevel,
+      project: projects[0].name,
+      prompt: 'Sugira proativamente uma tarefa para mim com base no meu nível de energia e no projeto atual.',
+    });
+
+    // Server action nunca lança — checa flag de erro embutida
+    if (result._isError) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro do Mentor de IA',
+        description: result._errorMessage || 'Não foi possível gerar sugestões. Tente novamente.',
       });
-      setSuggestions(result);
-    } catch (error: any) {
-      console.error(error);
-      setSuggestions(null); // Ensure suggestions are cleared on error
-      toast({ 
-        variant: 'destructive', 
-        title: "Erro do Mentor de IA", 
-        description: error.message || "Não foi possível gerar sugestões. Por favor, tente novamente."
-      })
-    } finally {
       setIsLoading(false);
+      return;
     }
+
+    setSuggestions(result);
+    setIsLoading(false);
   };
 
   return (

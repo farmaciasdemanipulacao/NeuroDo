@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useContext } from 'react';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Brain,
@@ -56,6 +56,16 @@ const priorityColor: Record<AISuggestedTask['priority'], string> = {
   low: 'bg-green-500/20 text-green-400 border-green-500/30',
 };
 
+// ── Helper: data no fuso local (evita problema UTC vs horario do Brasil) ──────────────────
+
+function localDateStr(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   return format(new Date(year, month - 1, day), "EEEE, d 'de' MMMM", { locale: ptBR });
@@ -69,9 +79,13 @@ export function EveningReviewForm() {
   const { toast } = useToast();
   const { energyLevel, setEnergyLevel } = useContext(AppContext)!;
 
-  // Date strings computed inside the component so they stay correct across midnight
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const tomorrowStr = useMemo(() => addDays(new Date(), 1).toISOString().split('T')[0], []);
+  // Date strings computed no fuso local — evita desfasagem UTC no Brasil (UTC-3)
+  const todayStr = useMemo(() => localDateStr(new Date()), []);
+  const tomorrowStr = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return localDateStr(d);
+  }, []);
 
   // AI result state
   const [aiResult, setAiResult] = useState<GenerateNightlyReviewOutput | null>(null);
@@ -206,11 +220,13 @@ export function EveningReviewForm() {
             priority: t.priority,
             type: 'Operacional',
             completed: false,
+            order: Date.now() + Math.random(),
             createdAt: new Date().toISOString(),
           })
         )
       );
 
+      console.log('[Review] Tarefas salvas para:', tomorrowStr, acceptedTasks.map(t => getFinalContent(t)));
       setHasSaved(true);
       toast({
         title: 'Ritual noturno salvo!',

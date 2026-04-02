@@ -33,9 +33,7 @@ export const workModeLabels: Record<WorkMode, string> = {
 type AppContextType = {
   energyLevel: number | null;
   setEnergyLevel: (level: number | null) => void;
-  streak: number;
-  setStreak: (streak: number) => void;
-  
+
   // Timer State
   hasTimerBeenStarted: boolean;
   timerMode: TimerMode;
@@ -58,7 +56,6 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [energyLevel, _setEnergyLevel] = useState<number | null>(null);
-  const [streak, setStreak] = useState(0);
   const { preferences, updatePreferences } = usePreferences();
 
   // Sincronia inicial: carrega energia salva no Firestore quando preferences chegar
@@ -156,8 +153,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => ({
       energyLevel,
       setEnergyLevel,
-      streak,
-      setStreak,
       // Timer state
       hasTimerBeenStarted,
       timerMode,
@@ -171,7 +166,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       resetTimer,
       skipToNextMode
     }),
-    [energyLevel, streak, hasTimerBeenStarted, timerMode, workMode, secondsLeft, duration, isActive, cycles, toggleTimer, resetTimer, skipToNextMode]
+    [energyLevel, hasTimerBeenStarted, timerMode, workMode, secondsLeft, duration, isActive, cycles, toggleTimer, resetTimer, skipToNextMode]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -6,6 +6,7 @@ import {
   BarChart3,
   BookCheck,
   FileText,
+  FlaskConical,
   LayoutDashboard,
   Map,
   Rocket,
@@ -98,16 +99,28 @@ export function AppSidebar() {
                 ))}
 
                 {isAdmin && (
-                    <SidebarMenuItem>
-                        <Link href="/dashboard/admin" passHref onClick={handleLinkClick}>
-                            <SidebarMenuButton tooltip="Admin" isActive={pathname === '/dashboard/admin'} asChild>
-                                <span>
-                                    <ShieldCheck className="text-amber-500" />
-                                    <span>Admin Panel</span>
-                                </span>
-                            </SidebarMenuButton>
-                        </Link>
-                    </SidebarMenuItem>
+                    <>
+                        <SidebarMenuItem>
+                            <Link href="/dashboard/admin" passHref onClick={handleLinkClick}>
+                                <SidebarMenuButton tooltip="Admin" isActive={pathname === '/dashboard/admin'} asChild>
+                                    <span>
+                                        <ShieldCheck className="text-amber-500" />
+                                        <span>Admin Panel</span>
+                                    </span>
+                                </SidebarMenuButton>
+                            </Link>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <Link href="/dashboard/validar" passHref onClick={handleLinkClick}>
+                                <SidebarMenuButton tooltip="Validar Firestore" isActive={pathname === '/dashboard/validar'} asChild>
+                                    <span>
+                                        <FlaskConical className="text-cyan-400" />
+                                        <span>Validar Firestore</span>
+                                    </span>
+                                </SidebarMenuButton>
+                            </Link>
+                        </SidebarMenuItem>
+                    </>
                 )}
             </SidebarMenu>
 

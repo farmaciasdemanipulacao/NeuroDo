@@ -99,30 +99,52 @@ export async function provideContextAwareAssistance(
       throw new Error('A API da OpenAI não retornou conteúdo.');
     }
 
+    let parsedOutput: any = null;
+
+    // 1) JSON direto
     try {
-      const parsedOutput = JSON.parse(rawOutput);
-      const validatedOutput = ProvideContextAwareAssistanceOutputSchema.safeParse(parsedOutput);
-
-      if (!validatedOutput.success) {
-        console.error('OpenAI output validation failed', validatedOutput.error); // eslint-disable-line no-console
-        console.log('Raw AI Output that failed:', rawOutput); // eslint-disable-line no-console
-        return {
-          suggestion: 'O Mentor de IA não conseguiu formular uma sugestão clara.',
-          reasoning: 'A resposta da IA estava em um formato inesperado. Tente gerar novamente.',
-          breakdown: '',
-        };
-      }
-
-      return validatedOutput.data;
-    } catch (parsingError) {
-      console.error('Failed to parse or validate AI response:', parsingError); // eslint-disable-line no-console
-      console.log('Raw AI Output that failed:', rawOutput); // eslint-disable-line no-console
-      return {
-        suggestion: 'O Mentor de IA retornou uma resposta inválida.',
-        reasoning: 'A resposta da IA não era um JSON válido, o que impediu o processamento. Tente gerar novamente.',
-        breakdown: '',
-      };
+      parsedOutput = JSON.parse(rawOutput);
+    } catch {
+      // tenta bloco JSON em seguida
     }
+
+    // 2) Extrair bloco JSON entre chaves
+    if (!parsedOutput) {
+      const match = rawOutput.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { parsedOutput = JSON.parse(match[0]); } catch { /* continua */ }
+      }
+    }
+
+    if (!parsedOutput) {
+      console.error('[IA Dashboard] Não foi possível parsear o output. Raw:', rawOutput);
+      throw new Error('A resposta da IA não era um JSON válido. Tente gerar novamente.');
+    }
+
+    // 3) Normalizar nomes de campos alternativos que o modelo pode usar
+    if (!parsedOutput.suggestion && parsedOutput.sugestao) parsedOutput.suggestion = parsedOutput.sugestao;
+    if (!parsedOutput.suggestion && parsedOutput.tarefa) parsedOutput.suggestion = parsedOutput.tarefa;
+    if (!parsedOutput.suggestion && parsedOutput.task) parsedOutput.suggestion = parsedOutput.task;
+    if (!parsedOutput.reasoning && parsedOutput.justificativa) parsedOutput.reasoning = parsedOutput.justificativa;
+    if (!parsedOutput.reasoning && parsedOutput.reason) parsedOutput.reasoning = parsedOutput.reason;
+    if (!parsedOutput.reasoning && parsedOutput.rationale) parsedOutput.reasoning = parsedOutput.rationale;
+    if (!parsedOutput.breakdown && parsedOutput.passos) parsedOutput.breakdown = parsedOutput.passos;
+    if (!parsedOutput.breakdown && parsedOutput.steps) parsedOutput.breakdown = parsedOutput.steps;
+    // Se suggestion for array, pegar primeiro
+    if (Array.isArray(parsedOutput.suggestion)) parsedOutput.suggestion = parsedOutput.suggestion[0];
+
+    const validatedOutput = ProvideContextAwareAssistanceOutputSchema.safeParse(parsedOutput);
+
+    if (!validatedOutput.success) {
+      console.error('[IA Dashboard] Validação falhou:', validatedOutput.error.format());
+      console.error('[IA Dashboard] Parsed object:', JSON.stringify(parsedOutput));
+      console.error('[IA Dashboard] Raw output:', rawOutput);
+      throw new Error(
+        `Formato inesperado na resposta da IA. Campos recebidos: ${Object.keys(parsedOutput).join(', ')}. Tente novamente.`
+      );
+    }
+
+    return validatedOutput.data;
   } catch (error: any) {
     console.error('Error communicating with OpenAI API:', error);
     throw new Error(`Ocorreu um erro ao se comunicar com o Mentor IA: ${error.message ?? error}`);

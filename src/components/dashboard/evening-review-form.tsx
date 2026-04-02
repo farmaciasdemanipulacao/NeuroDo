@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useContext } from 'react';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -21,8 +21,6 @@ import { AppContext } from '@/context/app-provider';
 import {
   useCollection,
   useUser,
-  addDocumentNonBlocking,
-  setDocumentNonBlocking,
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
@@ -163,60 +161,71 @@ export function EveningReviewForm() {
     const acceptedTasks = suggestedTasks.filter((t) => t.accepted);
     const getFinalContent = (t: SuggestedTaskItem) => t.editedContent || t.content;
 
-    // 1. Save review document (use date as docId for idempotency)
-    const reviewRef = doc(firestore, 'users', user.uid, 'reviews', todayStr);
-    setDocumentNonBlocking(
-      reviewRef,
-      {
-        userId: user.uid,
-        date: todayStr,
-        energyLevel: energyLevel,
-        tasksCompleted,
-        tasksTotal,
-        tasksSummary: todaysTasks.map((t) => ({
-          id: t.id,
-          content: t.content,
-          completed: t.completed,
-        })),
-        aiAnalysis: aiResult.dayAnalysis,
-        aiEnergyPattern: aiResult.energyPattern,
-        aiSuggestedTasks: acceptedTasks.map((t) => ({
-          content: getFinalContent(t),
-          priority: t.priority,
-          scheduledTime: t.scheduledTime,
-          estimatedMinutes: t.estimatedMinutes,
-          reasoning: t.reasoning,
-        })),
-        aiMotivationalNote: aiResult.motivationalNote,
-        createdAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    try {
+      // 1. Save review document (use date as docId for idempotency)
+      const reviewRef = doc(firestore, 'users', user.uid, 'reviews', todayStr);
+      await setDoc(
+        reviewRef,
+        {
+          userId: user.uid,
+          date: todayStr,
+          energyLevel: energyLevel,
+          tasksCompleted,
+          tasksTotal,
+          tasksSummary: todaysTasks.map((t) => ({
+            id: t.id,
+            content: t.content,
+            completed: t.completed,
+          })),
+          aiAnalysis: aiResult.dayAnalysis,
+          aiEnergyPattern: aiResult.energyPattern,
+          aiSuggestedTasks: acceptedTasks.map((t) => ({
+            content: getFinalContent(t),
+            priority: t.priority,
+            scheduledTime: t.scheduledTime,
+            estimatedMinutes: t.estimatedMinutes,
+            reasoning: t.reasoning,
+          })),
+          aiMotivationalNote: aiResult.motivationalNote,
+          createdAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
 
-    // 2. Create tasks for tomorrow for each accepted suggestion
-    const tasksCol = collection(firestore, 'users', user.uid, 'tasks');
-    for (const t of acceptedTasks) {
-      addDocumentNonBlocking(tasksCol, {
-        userId: user.uid,
-        content: getFinalContent(t),
-        scheduledDate: tomorrowStr,
-        scheduledTime: t.scheduledTime,
-        estimatedMinutes: t.estimatedMinutes,
-        isMIT: t.priority === 'high',
-        priority: t.priority,
-        type: 'Operacional',
-        completed: false,
-        createdAt: new Date().toISOString(),
+      // 2. Create tasks for tomorrow for each accepted suggestion
+      const tasksCol = collection(firestore, 'users', user.uid, 'tasks');
+      await Promise.all(
+        acceptedTasks.map((t) =>
+          addDoc(tasksCol, {
+            userId: user.uid,
+            content: getFinalContent(t),
+            scheduledDate: tomorrowStr,
+            scheduledTime: t.scheduledTime,
+            estimatedMinutes: t.estimatedMinutes,
+            isMIT: t.priority === 'high',
+            priority: t.priority,
+            type: 'Operacional',
+            completed: false,
+            createdAt: new Date().toISOString(),
+          })
+        )
+      );
+
+      setHasSaved(true);
+      toast({
+        title: 'Ritual noturno salvo!',
+        description: `${acceptedTasks.length} tarefa${acceptedTasks.length !== 1 ? 's' : ''} programada${acceptedTasks.length !== 1 ? 's' : ''} para amanhã.`,
       });
+    } catch (err: any) {
+      console.error('[Review] Erro ao salvar tarefas no Firestore:', err);
+      toast({
+        title: 'Erro ao salvar',
+        description: err?.message ?? 'Não foi possível salvar as tarefas. Verifique o console.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setHasSaved(true);
-
-    toast({
-      title: 'Ritual noturno salvo!',
-      description: `${acceptedTasks.length} tarefa${acceptedTasks.length !== 1 ? 's' : ''} programada${acceptedTasks.length !== 1 ? 's' : ''} para amanhã.`,
-    });
   }
 
   // ── Helpers for task item state ────────────────────────────────────────────
@@ -549,7 +558,7 @@ export function EveningReviewForm() {
                     'Gerar sugestões'
                   )}
                 </Button>
-                <Button variant="ghost" onClick={() => toast({ title: 'Sem sugestões', description: 'O Mentor IA não conseguiu formular sugestões claras.', variant: 'secondary' })}>
+                <Button variant="ghost" onClick={() => toast({ title: 'Sem sugestões', description: 'O Mentor IA não conseguiu formular sugestões claras. Tente novamente.' })}>
                   Por que?
                 </Button>
               </div>

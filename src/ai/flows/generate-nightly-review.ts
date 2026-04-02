@@ -40,10 +40,10 @@ Seu output DEVE ser um objeto JSON válido e nada mais.`;
 
 // --- Input/Output Schemas ---
 
-// tasksSummary items are validated leniently: content may be absent (legacy Firestore
-// documents stored as "title"). We normalise to a non-empty string via .default('').
+// tasksSummary items: content must be a string. The calling component is responsible
+// for mapping legacy "title" fields to "content" via getTaskLabel() before calling this.
 const TaskSummaryItemSchema = z.object({
-  content: z.string().optional().default(''),
+  content: z.string(),
   completed: z.boolean(),
 });
 

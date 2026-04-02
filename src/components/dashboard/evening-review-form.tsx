@@ -64,8 +64,8 @@ function formatDate(dateStr: string): string {
 }
 
 /** Returns the display label for a task, handling both `content` and legacy `title` fields. */
-function getTaskLabel(task: Task): string {
-  return task.content || (task as any).title || '';
+function getTaskLabel(task: Task & { title?: string }): string {
+  return task.content || task.title || '';
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────

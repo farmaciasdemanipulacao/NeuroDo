@@ -22,7 +22,6 @@ export default function DashboardSettingsPage() {
   const { toast } = useToast();
 
   const [defaultEnergy, setDefaultEnergy] = useState<number>(5);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Sync form state when preferences load
   useEffect(() => {
@@ -49,16 +48,12 @@ export default function DashboardSettingsPage() {
   }
 
   const handleSaveEnergyDefault = () => {
-    setIsSaving(true);
     updatePreferences({ energyLevel: defaultEnergy });
     setEnergyLevel(defaultEnergy);
-    setTimeout(() => {
-      setIsSaving(false);
-      toast({
-        title: 'Preferências salvas!',
-        description: 'Seu nível de energia padrão foi atualizado.',
-      });
-    }, 500);
+    toast({
+      title: 'Preferências salvas!',
+      description: 'Seu nível de energia padrão foi atualizado.',
+    });
   };
 
   return (
@@ -143,12 +138,8 @@ export default function DashboardSettingsPage() {
                     {energyLevel != null ? energyLevel : 'não definida'}
                   </span>
                 </p>
-                <Button onClick={handleSaveEnergyDefault} disabled={isSaving}>
-                  {isSaving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
+                <Button onClick={handleSaveEnergyDefault}>
+                  <Save className="mr-2 h-4 w-4" />
                   Salvar Preferência
                 </Button>
               </div>

@@ -69,10 +69,14 @@ export function MetricsChart() {
     if (tasks) {
       tasks.forEach(task => {
         if (task.completed && task.scheduledDate) {
-          const d = new Date(task.scheduledDate + 'T12:00:00');
-          const label = getISOWeek(d);
-          if (label in counts) {
-            counts[label] = (counts[label] || 0) + 1;
+          // scheduledDate is always YYYY-MM-DD; parse as local date to avoid UTC shift
+          const parts = task.scheduledDate.split('-').map(Number);
+          if (parts.length === 3) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const label = getISOWeek(d);
+            if (label in counts) {
+              counts[label] = (counts[label] || 0) + 1;
+            }
           }
         }
       });

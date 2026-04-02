@@ -252,10 +252,10 @@ export function EveningReviewForm() {
   // indicador de carregamento usado na UI
   const isLoading = isUserLoading || areTasksLoading;
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
 
       {/* ── SEÇÃO 1: Cabeçalho visual do dia ── */}
-      <Card>
+      <Card className="md:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Moon className="text-primary h-5 w-5" />
@@ -329,7 +329,7 @@ export function EveningReviewForm() {
       </Card>
 
       {/* ── SEÇÃO 2: Energia do dia ── */}
-      <Card>
+      <Card className="md:col-span-1">
         <CardContent className="pt-6 space-y-4">
           {energyLevel !== null ? (
             <div className="flex items-center gap-3">
@@ -380,69 +380,73 @@ export function EveningReviewForm() {
 
       {/* ── SEÇÃO 3: Botão analisar ── */}
       {!aiResult && (
-        <Button
-          className="w-full"
-          onClick={handleAnalyze}
-          disabled={isGenerating || energyLevel == null}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analisando seu dia...
-            </>
-          ) : (
-            <>
-              <Brain className="mr-2 h-4 w-4" />
-              Analisar meu dia com IA
-            </>
-          )}
-        </Button>
+        <div className="md:col-span-2">
+          <Button
+            className="w-full"
+            onClick={handleAnalyze}
+            disabled={isGenerating || energyLevel == null}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analisando seu dia...
+              </>
+            ) : (
+              <>
+                <Brain className="mr-2 h-4 w-4" />
+                Analisar meu dia com IA
+              </>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* ── SEÇÃO 4: Resultado da análise ── */}
       {aiResult && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Análise do Dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{aiResult.dayAnalysis}</p>
-            </CardContent>
-          </Card>
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Análise do Dia
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{aiResult.dayAnalysis}</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="h-4 w-4 text-yellow-400" />
-                Padrão de Energia
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{aiResult.energyPattern}</p>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-yellow-400" />
+                  Padrão de Energia
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{aiResult.energyPattern}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-primary/30 bg-primary/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Nota do Mentor
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium text-primary">{aiResult.motivationalNote}</p>
-            </CardContent>
-          </Card>
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  Nota do Mentor
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm font-medium text-primary">{aiResult.motivationalNote}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
       {/* ── SEÇÃO 5: Tarefas sugeridas para amanhã ── */}
       {aiResult && suggestedTasks.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 md:col-span-2">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold flex items-center gap-2">
@@ -520,6 +524,37 @@ export function EveningReviewForm() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Caso a IA tenha retornado resultado mas sem sugestões (formato inesperado) */}
+      {aiResult && suggestedTasks.length === 0 && (
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-4 w-4" /> Sugestões do Mentor de IA
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">A resposta da IA estava em um formato inesperado. Tente gerar novamente.</p>
+              <div className="flex gap-2">
+                <Button onClick={handleAnalyze} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    'Gerar sugestões'
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={() => toast({ title: 'Sem sugestões', description: 'O Mentor IA não conseguiu formular sugestões claras.', variant: 'secondary' })}>
+                  Por que?
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

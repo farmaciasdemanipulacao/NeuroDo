@@ -258,6 +258,13 @@ export interface PDIHistory {
     pdiContent: string;
 }
 
+export interface UserPreferences {
+  id?: string;
+  userId: string;
+  energyLevel?: number | null;
+  updatedAt?: string;
+}
+
 export interface MentorDoPreferences {
   responseStyle?: string;
   preferredTone?: string;

@@ -297,8 +297,8 @@ export interface MentorDoAdminConfig {
 
 export interface AISuggestedTask {
   content: string;
-  priority: TaskPriority;
-  scheduledTime: TaskTimeOfDay;
+  priority: 'high' | 'medium' | 'low';
+  scheduledTime: 'Manhã' | 'Tarde' | 'Noite';
   estimatedMinutes: number;
   reasoning: string;
 }
@@ -310,10 +310,10 @@ export interface NightlyReview {
   energyLevel: number;
   tasksCompleted: number;
   tasksTotal: number;
-  tasksSummary: string[];
+  tasksSummary: { id: string; content: string; completed: boolean }[];
   aiAnalysis: string;
   aiEnergyPattern: string;
   aiSuggestedTasks: AISuggestedTask[];
   aiMotivationalNote: string;
-  createdAt: string | { toDate: () => Date };
+  createdAt: string; // ISO string
 }

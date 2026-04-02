@@ -118,7 +118,7 @@ export function EveningReviewForm() {
 
   // ── Handle AI analysis ─────────────────────────────────────────────────────
   async function handleAnalyze() {
-    if (energyLevel === null) return;
+    if (energyLevel == null) return;
 
     setIsGenerating(true);
     try {
@@ -156,11 +156,12 @@ export function EveningReviewForm() {
 
   // ── Handle save ────────────────────────────────────────────────────────────
   async function handleSave() {
-    if (!user || !firestore || !aiResult) return;
+    if (!user || !firestore || !aiResult || energyLevel == null) return;
 
     setIsSaving(true);
 
     const acceptedTasks = suggestedTasks.filter((t) => t.accepted);
+    const getFinalContent = (t: SuggestedTaskItem) => t.editedContent || t.content;
 
     // 1. Save review document (use date as docId for idempotency)
     const reviewRef = doc(firestore, 'users', user.uid, 'reviews', todayStr);
@@ -169,7 +170,7 @@ export function EveningReviewForm() {
       {
         userId: user.uid,
         date: todayStr,
-        energyLevel: energyLevel ?? 5,
+        energyLevel: energyLevel,
         tasksCompleted,
         tasksTotal,
         tasksSummary: todaysTasks.map((t) => ({
@@ -180,7 +181,7 @@ export function EveningReviewForm() {
         aiAnalysis: aiResult.dayAnalysis,
         aiEnergyPattern: aiResult.energyPattern,
         aiSuggestedTasks: acceptedTasks.map((t) => ({
-          content: t.editedContent || t.content,
+          content: getFinalContent(t),
           priority: t.priority,
           scheduledTime: t.scheduledTime,
           estimatedMinutes: t.estimatedMinutes,
@@ -197,7 +198,7 @@ export function EveningReviewForm() {
     for (const t of acceptedTasks) {
       addDocumentNonBlocking(tasksCol, {
         userId: user.uid,
-        content: t.editedContent || t.content,
+        content: getFinalContent(t),
         scheduledDate: tomorrowStr,
         scheduledTime: t.scheduledTime,
         estimatedMinutes: t.estimatedMinutes,
@@ -349,12 +350,15 @@ export function EveningReviewForm() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-yellow-400" />
-                <span className="text-sm font-medium">Como foi sua energia hoje?</span>
-                <span className="ml-auto text-lg font-bold text-primary">
-                  {energyLevel ?? 5}/10
+                <label htmlFor="energy-slider" className="text-sm font-medium">
+                  Como foi sua energia hoje?
+                </label>
+                <span className="ml-auto text-sm text-muted-foreground">
+                  {energyLevel !== null ? `${energyLevel}/10` : 'Deslize para registrar'}
                 </span>
               </div>
               <Slider
+                id="energy-slider"
                 min={0}
                 max={10}
                 step={1}
@@ -376,7 +380,7 @@ export function EveningReviewForm() {
         <Button
           className="w-full"
           onClick={handleAnalyze}
-          disabled={isGenerating || energyLevel === null}
+          disabled={isGenerating || energyLevel == null}
         >
           {isGenerating ? (
             <>

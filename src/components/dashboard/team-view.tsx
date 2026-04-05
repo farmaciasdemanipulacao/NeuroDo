@@ -140,7 +140,7 @@ export function TeamView() {
       {!isLoading && team && team.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {team.map((member) => (
-            <Link href={`/dashboard/team/${member.id}`} key={member.id} className="group">
+            <Link href={`/dashboard/team/${member.id}`} key={member.id} prefetch={true} className="group">
                 <Card className="flex flex-col transition-all h-full hover:border-primary/50 hover:shadow-lg">
                     <CardHeader className="flex flex-row items-center gap-4">
                     <Avatar className="h-16 w-16">

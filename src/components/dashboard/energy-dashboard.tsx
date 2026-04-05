@@ -40,12 +40,15 @@ import {
 } from '@/ai/flows/analyze-energy-patterns';
 import { cn } from '@/lib/utils';
 
-// ── Constantes de cores ───────────────────────────────────────────────────────
+// ── Constantes de cores e limiares de energia ────────────────────────────────
 
 const COLOR_GREEN = '#22C55E';
 const COLOR_AMBER = '#F59E0B';
 const COLOR_RED = '#EF4444';
 const COLOR_BLUE = '#3B82F6';
+
+const ENERGY_HIGH_THRESHOLD = 7;  // energia >= 7 = alto
+const ENERGY_MEDIUM_THRESHOLD = 5; // energia >= 5 = médio
 
 // ── Dias da semana em pt-BR (abreviados) ──────────────────────────────────────
 
@@ -63,14 +66,14 @@ const DOW_FULL = [
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function energyColor(level: number): string {
-  if (level >= 7) return COLOR_GREEN;
-  if (level >= 5) return COLOR_AMBER;
+  if (level >= ENERGY_HIGH_THRESHOLD) return COLOR_GREEN;
+  if (level >= ENERGY_MEDIUM_THRESHOLD) return COLOR_AMBER;
   return COLOR_RED;
 }
 
 function energyBadgeClass(level: number): string {
-  if (level >= 7) return 'bg-green-500/20 text-green-400 border-green-500/30';
-  if (level >= 5) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+  if (level >= ENERGY_HIGH_THRESHOLD) return 'bg-green-500/20 text-green-400 border-green-500/30';
+  if (level >= ENERGY_MEDIUM_THRESHOLD) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
   return 'bg-red-500/20 text-red-400 border-red-500/30';
 }
 
@@ -574,7 +577,7 @@ export function EnergyDashboard() {
             )}
             {!isLoading && (
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Verde ≥ 7 · Âmbar ≥ 5 · Vermelho {'<'} 5 · Cinza = sem revisão
+                Verde ≥ {ENERGY_HIGH_THRESHOLD} · Âmbar ≥ {ENERGY_MEDIUM_THRESHOLD} · Vermelho {'<'} {ENERGY_MEDIUM_THRESHOLD} · Cinza = sem revisão
               </p>
             )}
           </CardContent>

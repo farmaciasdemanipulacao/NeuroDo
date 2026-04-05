@@ -79,14 +79,28 @@ function parseDateLocal(dateStr: string): Date {
   return new Date(year, month - 1, day);
 }
 
+// ── Types para tooltips do Recharts ──────────────────────────────────────────
+
+interface TooltipPayloadItem {
+  dataKey: string;
+  value: number;
+  payload: Record<string, unknown>;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}
+
 // ── Tooltip customizado para o gráfico principal ──────────────────────────────
 
-function EnergyTooltip({ active, payload, label }: any) {
+function EnergyTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null;
 
-  const energy = payload.find((p: any) => p.dataKey === 'energyLevel');
-  const completion = payload.find((p: any) => p.dataKey === 'completionRate');
-  const point = payload[0]?.payload;
+  const energy = payload.find((p) => p.dataKey === 'energyLevel');
+  const completion = payload.find((p) => p.dataKey === 'completionRate');
+  const point = payload[0]?.payload as { dateLabel?: string; tasksCompleted?: number; tasksTotal?: number } | undefined;
 
   return (
     <div className="rounded-lg border border-border/50 bg-background p-3 shadow-lg text-xs space-y-1.5">
@@ -112,12 +126,12 @@ function EnergyTooltip({ active, payload, label }: any) {
 
 // ── Tooltip do gráfico de dias da semana ──────────────────────────────────────
 
-function WeekdayTooltip({ active, payload, label }: any) {
+function WeekdayTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null;
-  const value = payload[0]?.value as number | undefined;
+  const value = payload[0]?.value;
   return (
     <div className="rounded-lg border border-border/50 bg-background p-3 shadow-lg text-xs space-y-1">
-      <p className="font-semibold text-foreground">{DOW_FULL[DOW_ABBR.indexOf(label)] ?? label}</p>
+      <p className="font-semibold text-foreground">{DOW_FULL[DOW_ABBR.indexOf(label ?? '')] ?? label}</p>
       {value !== undefined && (
         <p style={{ color: energyColor(value) }}>
           ⚡ Energia média: <strong>{value.toFixed(1)}/10</strong>
@@ -560,7 +574,7 @@ export function EnergyDashboard() {
             )}
             {!isLoading && (
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Verde ≥ 7 · Âmbar ≥ 5 · Vermelho &lt; 5 · Cinza = sem revisão
+                Verde ≥ 7 · Âmbar ≥ 5 · Vermelho {'<'} 5 · Cinza = sem revisão
               </p>
             )}
           </CardContent>

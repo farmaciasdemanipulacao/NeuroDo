@@ -47,14 +47,15 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
     if (user && firestore) {
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
-      const docId = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}`;
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const docId = `${dateStr}-${pad(now.getHours())}-${pad(now.getMinutes())}`;
       const checkinRef = doc(firestore, 'users', user.uid, 'energy_checkins', docId);
       setDocumentNonBlocking(checkinRef, {
         energyLevel: currentValue[0],
         comment: comment.trim(),
         createdAt: now.toISOString(),
-        date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-      }, { merge: true });
+        date: dateStr,
+      }, {});
     }
 
     toast({

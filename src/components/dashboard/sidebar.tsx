@@ -20,6 +20,9 @@ import {
   ShieldCheck,
   Sparkles,
   Zap,
+  ChevronRight,
+  Home,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -29,10 +32,14 @@ import {
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
+    SidebarMenuSub,
+    SidebarMenuSubItem,
+    SidebarMenuSubButton,
     SidebarRail,
     SidebarSeparator,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Logo } from './logo';
 import { useUser } from '@/firebase/provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -54,6 +61,11 @@ const navItems = [
   { href: '/dashboard/review', icon: BookCheck, label: 'Revisão Noturna' },
 ];
 
+const revenueSubItems = [
+  { href: '/dashboard/revenue/pf', icon: Home, label: 'Receitas PF' },
+  { href: '/dashboard/revenue/pj', icon: Building2, label: 'Receitas PJ' },
+];
+
 const projects = [
     { name: 'ENVOX', icon: Rocket, color: 'text-project-envox' },
     { name: 'FARMÁCIAS', icon: Rocket, color: 'text-project-farmacias' },
@@ -66,6 +78,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { user, isAdmin, signOut } = useUser();
+
+  const isRevenueActive = pathname.startsWith('/dashboard/revenue');
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -100,6 +114,40 @@ export function AppSidebar() {
                         </Link>
                     </SidebarMenuItem>
                 ))}
+
+                {/* ── Receitas com submenu expansível ── */}
+                <SidebarMenuItem>
+                    <Collapsible defaultOpen={isRevenueActive} className="group/collapsible w-full">
+                        <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                                tooltip="Receitas"
+                                isActive={isRevenueActive}
+                                className="w-full"
+                            >
+                                <TrendingUp />
+                                <span>Receitas</span>
+                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <SidebarMenuSub>
+                                {revenueSubItems.map(({ href, icon: Icon, label }) => (
+                                    <SidebarMenuSubItem key={href}>
+                                        <SidebarMenuSubButton
+                                            asChild
+                                            isActive={pathname === href || pathname.startsWith(href)}
+                                        >
+                                            <Link href={href} onClick={handleLinkClick}>
+                                                <Icon />
+                                                <span>{label}</span>
+                                            </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                ))}
+                            </SidebarMenuSub>
+                        </CollapsibleContent>
+                    </Collapsible>
+                </SidebarMenuItem>
 
                 {isAdmin && (
                     <SidebarMenuItem>

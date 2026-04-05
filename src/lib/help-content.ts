@@ -326,5 +326,10 @@ Com 3+ revisões, o MentorDO analisa seus padrões e entrega:
 - 1 recomendação principal para implementar amanhã
 
 **Dica TDAH:** Faça a Revisão Noturna todo dia por 1 semana. Em 7 dias você já terá padrões claros e a IA pode te ajudar a montar uma rotina que respeita seus ciclos naturais de energia.
+    revenuePF: `
+Registre quanto cada projeto distribui para você como Pessoa Física mensalmente. Acompanhe o progresso rumo às metas de R$20.000 em julho/2026 e R$30.000 em dezembro/2026.
+`,
+    revenuePJ: `
+Registre mensalmente o faturamento bruto e os custos de cada projeto PJ do ecossistema. O sistema calcula o lucro líquido automaticamente e mostra qual projeto mais contribui para a meta de R$30k/mês.
 `
 };

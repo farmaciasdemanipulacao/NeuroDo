@@ -20,6 +20,9 @@ const PROJECTS = [
   { id: 'felizmente', name: 'Felizmente' },
 ] as const;
 
+// Percentual de custos em relação ao bruto que aciona alerta visual
+const HIGH_EXPENSE_THRESHOLD_PERCENT = 60;
+
 // ── Utilitários ───────────────────────────────────────────────────────────────
 function formatBRL(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -113,7 +116,7 @@ export function PJRevenueTracker() {
     const base: Record<string, string> = {};
     PROJECTS.forEach((p) => {
       const saved = savedData?.entries.find((e) => e.projectId === p.id);
-      base[p.id] = grossInputs[p.id] ?? (saved ? String(saved.grossRevenue) : '');
+      base[p.id] = grossInputs[p.id] ?? (saved ? saved.grossRevenue.toFixed(2).replace(/\.?0+$/, '') : '');
     });
     return base;
   }, [savedData, grossInputs]);
@@ -122,7 +125,7 @@ export function PJRevenueTracker() {
     const base: Record<string, string> = {};
     PROJECTS.forEach((p) => {
       const saved = savedData?.entries.find((e) => e.projectId === p.id);
-      base[p.id] = expenseInputs[p.id] ?? (saved ? String(saved.expenses) : '');
+      base[p.id] = expenseInputs[p.id] ?? (saved ? saved.expenses.toFixed(2).replace(/\.?0+$/, '') : '');
     });
     return base;
   }, [savedData, expenseInputs]);
@@ -235,7 +238,7 @@ export function PJRevenueTracker() {
           const expenses = parseInput(currentExpenses[project.id] || '0');
           const net = gross - expenses;
           const expenseRatio = gross > 0 ? (expenses / gross) * 100 : 0;
-          const isHighExpense = gross > 0 && expenseRatio > 60;
+          const isHighExpense = gross > 0 && expenseRatio > HIGH_EXPENSE_THRESHOLD_PERCENT;
 
           return (
             <Card key={project.id}>

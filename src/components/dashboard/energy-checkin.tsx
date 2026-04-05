@@ -11,7 +11,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/hooks/use-app';
+import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { doc } from 'firebase/firestore';
 import { Zap } from 'lucide-react';
 
 const energyConfig = {
@@ -30,11 +34,37 @@ const energyConfig = {
 
 export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { setEnergyLevel } = useApp();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const [currentValue, setCurrentValue] = useState([5]);
+  const [comment, setComment] = useState('');
   const energyInfo = useMemo(() => energyConfig[currentValue[0] as keyof typeof energyConfig], [currentValue]);
 
   const handleSubmit = () => {
     setEnergyLevel(currentValue[0]);
+
+    if (user && firestore) {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const docId = `${dateStr}-${pad(now.getHours())}-${pad(now.getMinutes())}`;
+      const checkinRef = doc(firestore, 'users', user.uid, 'energy_checkins', docId);
+      setDocumentNonBlocking(checkinRef, {
+        energyLevel: currentValue[0],
+        comment: comment.trim(),
+        createdAt: now.toISOString(),
+        date: dateStr,
+      }, {});
+    }
+
+    toast({
+      description: comment.trim()
+        ? 'Energia registrada com nota! 💪'
+        : 'Energia registrada! 💪',
+    });
+
+    setComment('');
     onOpenChange(false);
   };
 
@@ -64,6 +94,17 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
             <span>Baixa</span>
             <span>Média</span>
             <span>Alta</span>
+          </div>
+          <div>
+            <Textarea
+              placeholder="O que está influenciando sua energia agora? (opcional)"
+              maxLength={280}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="resize-none"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground text-right mt-1">{comment.length}/280</p>
           </div>
         </div>
         <DialogFooter>

@@ -19,6 +19,9 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  ChevronRight,
+  Home,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -28,10 +31,14 @@ import {
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
+    SidebarMenuSub,
+    SidebarMenuSubItem,
+    SidebarMenuSubButton,
     SidebarRail,
     SidebarSeparator,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Logo } from './logo';
 import { useUser } from '@/firebase/provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,8 +55,12 @@ const navItems = [
   { href: '/dashboard/documents', icon: FileText, label: 'Documentos' },
   { href: '/dashboard/roadmap', icon: Map, label: 'Roadmap' },
   { href: '/dashboard/metrics', icon: BarChart3, label: 'Métricas' },
-  { href: '/dashboard/revenue', icon: TrendingUp, label: 'Receita' },
   { href: '/dashboard/review', icon: BookCheck, label: 'Revisão Noturna' },
+];
+
+const revenueSubItems = [
+  { href: '/dashboard/revenue/pf', icon: Home, label: 'Receitas PF' },
+  { href: '/dashboard/revenue/pj', icon: Building2, label: 'Receitas PJ' },
 ];
 
 const projects = [
@@ -64,6 +75,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { user, isAdmin, signOut } = useUser();
+
+  const isRevenueActive = pathname.startsWith('/dashboard/revenue');
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -98,6 +111,40 @@ export function AppSidebar() {
                         </Link>
                     </SidebarMenuItem>
                 ))}
+
+                {/* ── Receitas com submenu expansível ── */}
+                <SidebarMenuItem>
+                    <Collapsible defaultOpen={isRevenueActive} className="group/collapsible w-full">
+                        <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                                tooltip="Receitas"
+                                isActive={isRevenueActive}
+                                className="w-full"
+                            >
+                                <TrendingUp />
+                                <span>Receitas</span>
+                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <SidebarMenuSub>
+                                {revenueSubItems.map(({ href, icon: Icon, label }) => (
+                                    <SidebarMenuSubItem key={href}>
+                                        <SidebarMenuSubButton
+                                            asChild
+                                            isActive={pathname === href || pathname.startsWith(href)}
+                                        >
+                                            <Link href={href} onClick={handleLinkClick}>
+                                                <Icon />
+                                                <span>{label}</span>
+                                            </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                ))}
+                            </SidebarMenuSub>
+                        </CollapsibleContent>
+                    </Collapsible>
+                </SidebarMenuItem>
 
                 {isAdmin && (
                     <SidebarMenuItem>

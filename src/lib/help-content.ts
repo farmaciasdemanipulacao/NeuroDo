@@ -297,5 +297,11 @@ Cada projeto mostra o percentual em relação à contribuição esperada (meta t
 Os últimos 3 meses registrados aparecem no final da página para referência rápida.
 
 **Dica TDAH:** Registre a receita no primeiro dia de cada mês — torne isso um ritual. Ver a barra subindo é dopamina pura e vai te fazer abrir o app todo dia.
+`,
+    revenuePF: `
+Registre quanto cada projeto distribui para você como Pessoa Física mensalmente. Acompanhe o progresso rumo às metas de R$20.000 em julho/2026 e R$30.000 em dezembro/2026.
+`,
+    revenuePJ: `
+Registre mensalmente o faturamento bruto e os custos de cada projeto PJ do ecossistema. O sistema calcula o lucro líquido automaticamente e mostra qual projeto mais contribui para a meta de R$30k/mês.
 `
 };

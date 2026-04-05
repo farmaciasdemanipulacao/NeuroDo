@@ -329,6 +329,26 @@ export interface MonthlyRevenue {
   updatedAt: string;
 }
 
+export interface PJRevenueEntry {
+  projectId: string;
+  projectName: string;
+  grossRevenue: number;   // Faturamento bruto
+  expenses: number;       // Custos/despesas do projeto
+  netRevenue: number;     // Receita líquida (grossRevenue - expenses)
+}
+
+export interface MonthlyPJRevenue {
+  id: string;             // formato YYYY-MM
+  userId: string;
+  month: string;          // formato YYYY-MM
+  entries: PJRevenueEntry[];
+  totalGross: number;     // Soma de todos grossRevenue
+  totalExpenses: number;  // Soma de todos expenses
+  totalNet: number;       // Soma de todos netRevenue
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NightlyReview {
   id: string;
   userId: string;

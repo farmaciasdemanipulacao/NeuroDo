@@ -34,13 +34,12 @@ import {
   Clock,
 } from 'lucide-react';
 import { useCollection, useDoc, useMemoFirebase, useUser, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { RoadmapMilestone, Subtask, Goal, Project, MilestoneStatus } from '@/lib/types';
 import { MilestoneForm } from './milestone-form';
 import { breakdownMilestone } from '@/ai/flows/breakdown-milestone';
-import { addDoc, updateDoc } from 'firebase/firestore';
 
 const getStatusVariant = (status: RoadmapMilestone['status']) => {
   switch (status) {
@@ -177,7 +176,7 @@ export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
     if (!user || !firestore || !newSubtaskTitle.trim()) return;
     setIsAddingSubtask(true);
     try {
-      await addDoc(
+      await addDocumentNonBlocking(
         collection(firestore, 'users', user.uid, 'milestones', milestoneId, 'subtasks'),
         {
           title: newSubtaskTitle.trim(),
@@ -511,8 +510,8 @@ export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
             </div>
           )}
 
-          {/* Generate checklist button (only when subtasks exist) */}
-          {subtasks.length > 0 && subtasks.every(s => s.status !== 'template') && (
+          {/* Generate more subtasks button */}
+          {subtasks.length > 0 && (
             <Button
               variant="outline"
               size="sm"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -45,6 +46,7 @@ function MilestoneCard({
     onEdit: () => void,
     onDelete: () => void,
 }) {
+    const router = useRouter();
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -138,7 +140,7 @@ function MilestoneCard({
 
     return (
         <Card className="group transition-all hover:border-primary/50 relative">
-            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
                     <Pencil className="h-4 w-4" />
                 </Button>
@@ -166,85 +168,83 @@ function MilestoneCard({
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-            <div className="cursor-pointer" onClick={onEdit}>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg pr-20">{milestone.title}</CardTitle>
-                        <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
-                            {milestone.status}
-                        </Badge>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg pr-20 cursor-pointer hover:text-primary transition-colors" onClick={onEdit}>{milestone.title}</CardTitle>
+                    <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
+                        {milestone.status}
+                    </Badge>
+                </div>
+                <CardDescription className="flex items-center gap-2 pt-1 text-xs">
+                    <Calendar className="h-3 w-3"/>
+                    <span>
+                        {format(milestone.startDate, "dd MMM yyyy", { locale: ptBR })} - {format(milestone.endDate, "dd MMM yyyy", { locale: ptBR })}
+                    </span>
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <div className="mb-1 flex justify-between items-baseline text-xs">
+                        <p className="font-medium">Progresso</p>
+                        <p className="font-bold">{milestone.progress}%</p>
                     </div>
-                    <CardDescription className="flex items-center gap-2 pt-1 text-xs">
-                        <Calendar className="h-3 w-3"/>
-                        <span>
-                            {format(milestone.startDate, "dd MMM yyyy", { locale: ptBR })} - {format(milestone.endDate, "dd MMM yyyy", { locale: ptBR })}
-                        </span>
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <div className="mb-1 flex justify-between items-baseline text-xs">
-                            <p className="font-medium">Progresso</p>
-                            <p className="font-bold">{milestone.progress}%</p>
-                        </div>
-                        <Progress value={milestone.progress} className="h-2" />
+                    <Progress value={milestone.progress} className="h-2" />
+                </div>
+                {dependsOnMilestone && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <GitMerge className="h-3 w-3" />
+                        <span>Depende de: <span className="font-semibold">{dependsOnMilestone.title}</span></span>
                     </div>
-                    {dependsOnMilestone && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <GitMerge className="h-3 w-3" />
-                            <span>Depende de: <span className="font-semibold">{dependsOnMilestone.title}</span></span>
+                )}
+                {linkedGoal && (
+                    <Badge variant="outline" className="font-normal">
+                        <div className="flex items-center gap-1.5">
+                            <Target className="h-3 w-3" />
+                            <span>Meta: {linkedGoal.title}</span>
                         </div>
-                    )}
-                    {linkedGoal && (
-                        <Badge variant="outline" className="font-normal">
-                            <div className="flex items-center gap-1.5">
-                                <Target className="h-3 w-3" />
-                                <span>Meta: {linkedGoal.title}</span>
-                            </div>
-                        </Badge>
-                    )}
-                     {subtasks && (
-                        <div className="mt-4 pt-4 border-t border-dashed space-y-2">
-                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <ListChecks className="h-4 w-4" />
-                            <span>Checklist ({completedSubtasks}/{subtasks.length})</span>
-                          </div>
-                          {subtasks.length > 0 ? (
-                            <div className="space-y-1">
-                                {subtasks.slice(0, 3).map(subtask => (
-                                <div key={subtask.id} className="flex items-center gap-2 text-sm ml-2">
-                                    <Checkbox
-                                    id={`subtask-${subtask.id}`}
-                                    checked={subtask.status !== 'template' || !!subtask.linkedTaskId}
-                                    disabled={subtask.status !== 'template' || !!subtask.linkedTaskId}
-                                    onCheckedChange={() => handleCreateTaskFromSubtask(subtask)}
-                                    />
-                                    <label htmlFor={`subtask-${subtask.id}`} className={cn("flex-1", (subtask.status !== 'template' || !!subtask.linkedTaskId) && "text-muted-foreground line-through")}>
-                                    {subtask.title}
-                                    </label>
-                                    {(subtask.status === 'scheduled' || !!subtask.linkedTaskId) && (
-                                    <Badge variant="secondary" className="text-xs">
-                                        Agendada
-                                    </Badge>
-                                    )}
-                                </div>
-                                ))}
-                                {subtasks.length > 3 && (
-                                <Button variant="link" size="sm" className="text-xs h-auto p-0 ml-8" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                                    Ver todos ({subtasks.length})
-                                </Button>
+                    </Badge>
+                )}
+                 {subtasks && (
+                    <div className="mt-4 pt-4 border-t border-dashed space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <ListChecks className="h-4 w-4" />
+                        <span>Checklist ({completedSubtasks}/{subtasks.length})</span>
+                      </div>
+                      {subtasks.length > 0 ? (
+                        <div className="space-y-1">
+                            {subtasks.slice(0, 3).map(subtask => (
+                            <div key={subtask.id} className="flex items-center gap-2 text-sm ml-2">
+                                <Checkbox
+                                id={`subtask-${subtask.id}`}
+                                checked={subtask.status !== 'template' || !!subtask.linkedTaskId}
+                                disabled={subtask.status !== 'template' || !!subtask.linkedTaskId}
+                                onCheckedChange={() => handleCreateTaskFromSubtask(subtask)}
+                                />
+                                <label htmlFor={`subtask-${subtask.id}`} className={cn("flex-1", (subtask.status !== 'template' || !!subtask.linkedTaskId) && "text-muted-foreground line-through")}>
+                                {subtask.title}
+                                </label>
+                                {(subtask.status === 'scheduled' || !!subtask.linkedTaskId) && (
+                                <Badge variant="secondary" className="text-xs">
+                                    Agendada
+                                </Badge>
                                 )}
                             </div>
-                          ) : (
-                            <Button size="sm" variant="outline" className="w-full" onClick={handleGenerateChecklist} disabled={isGenerating}>
-                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4" />}
-                                Gerar Checklist com IA
+                            ))}
+                            {subtasks.length > 3 && (
+                            <Button variant="link" size="sm" className="text-xs h-auto p-0 ml-8" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/roadmap/${milestone.id}`); }}>
+                                Ver todos ({subtasks.length})
                             </Button>
-                          )}
+                            )}
                         </div>
+                      ) : (
+                        <Button size="sm" variant="outline" className="w-full" onClick={handleGenerateChecklist} disabled={isGenerating}>
+                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4" />}
+                            Gerar Checklist com IA
+                        </Button>
                       )}
-                </CardContent>
-            </div>
+                    </div>
+                  )}
+            </CardContent>
         </Card>
     )
 }

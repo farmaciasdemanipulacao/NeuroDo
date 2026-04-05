@@ -17,8 +17,8 @@ import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
-import { FirebaseContext, useDoc } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { FirebaseContext, useDoc, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { collection, query, doc } from 'firebase/firestore';
 
 type Message = {
   role: 'user' | 'assistant' | 'error';
@@ -88,9 +88,26 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   const mentorProfileRef = user && firestore ? doc(firestore, 'users', user.uid, 'mentorDo', 'profile') : null;
   const { data: mentorProfile } = useDoc(mentorProfileRef);
 
-  const profileContext = mentorProfile
-    ? `Perfil MentorDo do usuário: neurodivergência=${mentorProfile.neurodivergence?.join(', ') || 'não informado'}; medicação=${mentorProfile.medication || 'não informado'}; diagnósticos=${mentorProfile.diagnoses || 'não informado'}; crenças limitantes=${mentorProfile.limitingBeliefs || 'não informado'}; desafios=${mentorProfile.challenges || 'não informado'}; preferências=${mentorProfile.preferences ? JSON.stringify(mentorProfile.preferences) : 'não informado'}; vícios=${mentorProfile.addictions?.map((a: any) => `${a.name}${a.willingToChange ? ' (quer mudar)' : ''}`).join(', ') || 'não informado'}.`
-    : '';
+  const milestonesQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'users', user.uid, 'milestones'));
+  }, [user, firestore]);
+  const { data: milestones } = useCollection<any>(milestonesQuery);
+
+  const profileContext = (() => {
+    const base = mentorProfile
+      ? `Perfil MentorDo do usuário: neurodivergência=${mentorProfile.neurodivergence?.join(', ') || 'não informado'}; medicação=${mentorProfile.medication || 'não informado'}; diagnósticos=${mentorProfile.diagnoses || 'não informado'}; crenças limitantes=${mentorProfile.limitingBeliefs || 'não informado'}; desafios=${mentorProfile.challenges || 'não informado'}; preferências=${mentorProfile.preferences ? JSON.stringify(mentorProfile.preferences) : 'não informado'}; vícios=${mentorProfile.addictions?.map((a: any) => `${a.name}${a.willingToChange ? ' (quer mudar)' : ''}`).join(', ') || 'não informado'}.`
+      : '';
+
+    const activeMilestones = milestones?.filter((m: any) => m.status !== 'Concluído') ?? [];
+    const roadmapContext = activeMilestones.length > 0
+      ? `\n\nROADMAP ATIVO do usuário (marcos e próximas ações): ${activeMilestones.map((m: any) =>
+          `Marco "${m.title}" (${m.status}, ${m.progress || 0}% concluído, prazo: ${m.endDate ? new Date(typeof m.endDate === 'string' ? m.endDate : m.endDate.toDate()).toLocaleDateString('pt-BR') : 'sem prazo'})`
+        ).join('; ')}. INSTRUÇÕES DE PRIORIZAÇÃO: Ao sugerir próximas ações ou prioridades, sempre considere primeiro as tarefas ligadas aos marcos do roadmap, pois elas são o caminho direto para as metas serem atingidas. Pergunte sobre o roadmap quando o usuário parecer perdido ou sem foco.`
+      : '';
+
+    return base + roadmapContext;
+  })();
 
   useEffect(() => {
     // Scroll to bottom quando mensagens mudam

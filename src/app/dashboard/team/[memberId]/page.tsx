@@ -5,6 +5,7 @@ import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, addDocum
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { TeamMember, FeedbackSession, PDIHistory, GenerateFeedbackSessionOutput } from '@/lib/types';
 import { Loader2, ArrowLeft, UserCircle, MessageSquareQuote, Send, Pencil, Trash2, Copy, ClipboardList } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -248,8 +249,27 @@ export default function TeamMemberPage() {
     
     if (isLoadingMember) {
         return (
-            <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex-1 space-y-6">
+                <Skeleton className="h-9 w-36 mb-4" />
+                <header className="flex flex-row flex-wrap items-start gap-6">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-10 w-48" />
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-5 w-20 mt-2" />
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-1">
+                            <Skeleton className="h-9 w-9 rounded-md" />
+                            <Skeleton className="h-9 w-9 rounded-md" />
+                        </div>
+                        <div className="flex flex-row flex-wrap gap-2">
+                            <Skeleton className="h-9 w-28 rounded-md" />
+                            <Skeleton className="h-9 w-28 rounded-md" />
+                            <Skeleton className="h-9 w-28 rounded-md" />
+                        </div>
+                    </div>
+                </header>
             </div>
         );
     }
@@ -277,7 +297,7 @@ export default function TeamMemberPage() {
                 </Button>
             </Link>
 
-            <header className="flex flex-col sm:flex-row items-start gap-6">
+            <header className="flex flex-row flex-wrap items-start gap-6">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={member.avatarUrl} alt={member.name} />
                     <AvatarFallback><UserCircle className="h-16 w-16 text-muted-foreground" /></AvatarFallback>
@@ -313,7 +333,7 @@ export default function TeamMemberPage() {
                         </AlertDialog>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <div className="flex flex-row flex-wrap gap-2 w-full sm:w-auto">
                         <Button variant="outline" onClick={() => setIsFeedbackOpen(true)} className="border-primary text-primary hover:bg-primary/10 hover:text-primary"><MessageSquareQuote className="mr-2 h-4 w-4" />Feedback</Button>
                         <Button variant="outline" onClick={() => handleOpenEditDialog('pdi')} className="border-chart-1 text-chart-1 hover:bg-chart-1/10 hover:text-chart-1"><ClipboardList className="mr-2 h-4 w-4" />Gerar PDI</Button>
                         <Button 

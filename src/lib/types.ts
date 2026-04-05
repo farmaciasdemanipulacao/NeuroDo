@@ -313,6 +313,22 @@ export interface Preference {
   updatedAt: string;
 }
 
+export interface RevenueEntry {
+  projectId: string;
+  projectName: string;
+  amount: number;
+}
+
+export interface MonthlyRevenue {
+  id: string; // formato YYYY-MM
+  userId: string;
+  month: string; // formato YYYY-MM
+  entries: RevenueEntry[];
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NightlyReview {
   id: string;
   userId: string;

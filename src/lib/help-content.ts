@@ -269,5 +269,33 @@ Esta não é apenas uma lista de contatos. É o mapa das pessoas que fazem seu n
 3.  **Aniversários:** Um simples 'parabéns' no dia certo fortalece laços. Relacionamentos movem negócios.
 
 Lembre-se: seu sucesso como CEO é medido pela sua capacidade de extrair o melhor das pessoas ao seu redor, não pela quantidade de tarefas que você completa sozinho.
+`,
+    revenue: `
+**💰 Painel de Receita por Projeto**
+
+Registre mensalmente a receita de cada projeto do seu ecossistema e acompanhe sua jornada rumo às metas financeiras de 2026.
+
+**📅 Seletor de Mês**
+Escolha o mês de referência para registrar ou revisar a receita. Os últimos 12 meses estão disponíveis.
+
+**📝 Como Registrar**
+- Preencha o valor de receita de cada projeto no mês selecionado.
+- Clique em "Salvar Receita do Mês" para persistir os dados.
+- Os valores são salvos automaticamente no banco de dados.
+
+**📊 Barras de Progresso**
+- **Meta Julho/2026 — R$20.000:** meta intermediária do semestre
+- **Meta Dezembro/2026 — R$30.000:** meta final do ano
+- 🟢 Verde: >= 70% da meta atingido
+- 🟡 Âmbar: >= 40% da meta atingido
+- 🔴 Vermelho: < 40% da meta atingido
+
+**🏷️ Badge por Projeto**
+Cada projeto mostra o percentual em relação à contribuição esperada (meta total / 5 projetos).
+
+**📋 Histórico Recente**
+Os últimos 3 meses registrados aparecem no final da página para referência rápida.
+
+**Dica TDAH:** Registre a receita no primeiro dia de cada mês — torne isso um ritual. Ver a barra subindo é dopamina pura e vai te fazer abrir o app todo dia.
 `
 };

@@ -19,6 +19,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Zap,
   ChevronRight,
   Home,
   Building2,
@@ -55,6 +56,7 @@ const navItems = [
   { href: '/dashboard/documents', icon: FileText, label: 'Documentos' },
   { href: '/dashboard/roadmap', icon: Map, label: 'Roadmap' },
   { href: '/dashboard/metrics', icon: BarChart3, label: 'Métricas' },
+  { href: '/dashboard/energy', icon: Zap, label: 'Energia' },
   { href: '/dashboard/review', icon: BookCheck, label: 'Revisão Noturna' },
 ];
 

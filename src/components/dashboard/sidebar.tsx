@@ -19,6 +19,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -48,6 +49,7 @@ const navItems = [
   { href: '/dashboard/documents', icon: FileText, label: 'Documentos' },
   { href: '/dashboard/roadmap', icon: Map, label: 'Roadmap' },
   { href: '/dashboard/metrics', icon: BarChart3, label: 'Métricas' },
+  { href: '/dashboard/energy', icon: Zap, label: 'Energia' },
   { href: '/dashboard/revenue', icon: TrendingUp, label: 'Receita' },
   { href: '/dashboard/review', icon: BookCheck, label: 'Revisão Noturna' },
 ];

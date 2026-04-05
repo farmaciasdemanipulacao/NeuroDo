@@ -297,5 +297,34 @@ Cada projeto mostra o percentual em relação à contribuição esperada (meta t
 Os últimos 3 meses registrados aparecem no final da página para referência rápida.
 
 **Dica TDAH:** Registre a receita no primeiro dia de cada mês — torne isso um ritual. Ver a barra subindo é dopamina pura e vai te fazer abrir o app todo dia.
+`,
+    energy: `
+**⚡ Painel de Energia & Produtividade**
+
+Esta página analisa seu histórico de energia e produtividade. Complete revisões noturnas regularmente para ver padrões precisos. A IA identifica seus melhores dias, horários e sugere como otimizar sua rotina com base no seu perfil.
+
+**📊 Cards de Resumo**
+- **Energia Média:** nível médio dos últimos 30 dias com tendência (subindo/caindo/estável)
+- **Taxa de Conclusão:** percentual médio de tarefas concluídas por dia
+- **Melhor Dia:** qual dia da semana você tem mais energia
+- **Sequência Atual:** dias consecutivos com energia >= 5
+
+**📈 Gráfico Energia × Produtividade**
+Cruza energia diária (linha verde) com taxa de conclusão de tarefas (barras âmbar). Revela correlações entre como você se sente e quanto você produz.
+
+**📅 Padrão Semanal**
+Mostra sua energia média por dia da semana. O dia mais alto fica em verde — esse é seu dia de ouro para tarefas críticas.
+
+**🗓️ Últimos 7 dias**
+Mini-timeline visual com o nível de energia de cada dia recente. Verde >= 7, âmbar >= 5, vermelho < 5.
+
+**🤖 Análise com IA**
+Com 3+ revisões, o MentorDO analisa seus padrões e entrega:
+- Visão geral dos seus comportamentos
+- 3-5 insights específicos e acionáveis
+- Como sua energia afeta sua produtividade
+- 1 recomendação principal para implementar amanhã
+
+**Dica TDAH:** Faça a Revisão Noturna todo dia por 1 semana. Em 7 dias você já terá padrões claros e a IA pode te ajudar a montar uma rotina que respeita seus ciclos naturais de energia.
 `
 };

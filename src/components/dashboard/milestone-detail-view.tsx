@@ -65,7 +65,7 @@ interface MilestoneDetailViewProps {
 
 export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -105,7 +105,7 @@ export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
   }, [user, firestore]);
   const { data: projects } = useCollection<Project>(projectsQuery);
 
-  const isLoading = isMilestoneLoading || areSubtasksLoading;
+  const isLoading = isUserLoading || isMilestoneLoading || areSubtasksLoading;
 
   // Sort subtasks by order
   const subtasks = useMemo(() => {

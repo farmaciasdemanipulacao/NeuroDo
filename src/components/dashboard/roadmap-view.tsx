@@ -37,12 +37,10 @@ type RoadmapMilestoneWithDate = RoadmapMilestone & { startDate: Date; endDate: D
 function MilestoneCard({ 
     milestone, 
     allGoals,
-    onNavigate,
     onDelete,
 } : { 
     milestone: RoadmapMilestoneWithDate, 
     allGoals: Goal[] | null,
-    onNavigate: () => void,
     onDelete: () => void,
 }) {
     const router = useRouter();
@@ -137,15 +135,17 @@ function MilestoneCard({
     };
 
 
+    const navigateToDetail = () => router.push(`/dashboard/roadmap/${milestone.id}`);
+
     return (
-        <Card className="group transition-all hover:border-primary/50 relative cursor-pointer" onClick={onNavigate}>
+        <Card className="group transition-all hover:border-primary/50 relative cursor-pointer" onClick={navigateToDetail}>
             <div className="absolute top-2 right-2 flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onNavigate(); }}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); navigateToDetail(); }}>
                     <Pencil className="h-4 w-4" />
                 </Button>
                 <AlertDialog onOpenChange={() => setDeleteChecked(false)}>
-                    <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </AlertDialogTrigger>
@@ -169,7 +169,7 @@ function MilestoneCard({
             </div>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg pr-20 cursor-pointer hover:text-primary transition-colors" onClick={(e) => { e.stopPropagation(); onNavigate(); }}>{milestone.title}</CardTitle>
+                <CardTitle className="text-lg pr-20 hover:text-primary transition-colors">{milestone.title}</CardTitle>
                     <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
                         {milestone.status}
                     </Badge>
@@ -361,7 +361,6 @@ export function RoadmapView() {
         {isFormOpen && (
             <MilestoneForm
                 key="new"
-                milestone={null}
                 onSave={handleSaveMilestone}
                 onClose={() => setIsFormOpen(false)}
             />
@@ -399,7 +398,6 @@ export function RoadmapView() {
                                   key={milestone.id}
                                   milestone={milestone}
                                   allGoals={goals}
-                                  onNavigate={() => router.push(`/dashboard/roadmap/${milestone.id}`)}
                                   onDelete={() => handleDeleteMilestone(milestone.id)}
                                 />
                             ))}

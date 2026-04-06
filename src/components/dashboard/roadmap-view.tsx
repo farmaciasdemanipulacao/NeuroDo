@@ -249,6 +249,7 @@ function MilestoneCard({
 }
 
 export function RoadmapView() {
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();

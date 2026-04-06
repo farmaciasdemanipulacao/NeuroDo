@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { RoadmapMilestone, Goal, Project, Subtask, MilestoneStatus } from '@/lib/types';
-import { PlusCircle, Rocket, Calendar, GitMerge, Loader2, Trash2, Map as MapIcon, Pencil, Target, ListChecks, Wand2 } from 'lucide-react';
+import { PlusCircle, Rocket, Calendar, Loader2, Trash2, Map as MapIcon, Pencil, Target, ListChecks, Wand2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,6 @@ function MilestoneCard({
 
     const { data: subtasks } = useCollection<Subtask>(subtasksQuery);
     
-    const dependsOnMilestone = null; // This needs to be passed in if needed
     const linkedGoal = allGoals?.find(g => g.id === milestone.linkedGoalId);
 
     const completedSubtasks = subtasks?.filter(s => s.status === 'completed' || !!s.linkedTaskId).length || 0;
@@ -189,12 +188,6 @@ function MilestoneCard({
                     </div>
                     <Progress value={milestone.progress} className="h-2" />
                 </div>
-                {dependsOnMilestone && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <GitMerge className="h-3 w-3" />
-                        <span>Depende de: <span className="font-semibold">{dependsOnMilestone.title}</span></span>
-                    </div>
-                )}
                 {linkedGoal && (
                     <Badge variant="outline" className="font-normal">
                         <div className="flex items-center gap-1.5">

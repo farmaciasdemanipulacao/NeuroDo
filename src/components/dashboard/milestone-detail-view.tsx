@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   ArrowLeft,
+  Calendar,
   Loader2,
   Pencil,
   Trash2,
@@ -326,6 +329,24 @@ export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
         </Button>
       </div>
 
+      {/* Dates and description */}
+      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+        {milestoneWithDates && (
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />
+            <span>
+              {format(milestoneWithDates.startDate, "dd MMM yyyy", { locale: ptBR })}
+              {' — '}
+              {format(milestoneWithDates.endDate, "dd MMM yyyy", { locale: ptBR })}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {milestone.description && (
+        <p className="text-sm text-muted-foreground">{milestone.description}</p>
+      )}
+
       {/* Progress */}
       <div>
         <div className="mb-1 flex justify-between items-baseline text-sm">
@@ -556,10 +577,10 @@ export function MilestoneDetailView({ milestoneId }: MilestoneDetailViewProps) {
       </Card>
 
       {/* Milestone edit form */}
-      {isFormOpen && milestone && (
+      {isFormOpen && milestone && milestoneWithDates && (
         <MilestoneForm
           key={milestone.id}
-          milestone={milestoneWithDates}
+          milestone={{ ...milestoneWithDates, dueDate: milestoneWithDates.endDate }}
           onSave={handleSaveMilestone}
           onClose={() => setIsFormOpen(false)}
         />

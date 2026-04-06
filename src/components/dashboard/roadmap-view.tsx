@@ -6,14 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { RoadmapMilestone, Goal, Project, Subtask, MilestoneStatus } from '@/lib/types';
-import { PlusCircle, Rocket, Calendar, GitMerge, Loader2, Trash2, Map as MapIcon, Pencil, Target, ListChecks, X, Wand2 } from 'lucide-react';
+import { PlusCircle, Rocket, Calendar, GitMerge, Loader2, Trash2, Map as MapIcon, Pencil, Target, ListChecks, Wand2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { useCollection, useUser, deleteDocumentNonBlocking, useFirestore, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, query, doc, writeBatch, addDoc, updateDoc } from 'firebase/firestore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { collection, query, doc, writeBatch, addDoc } from 'firebase/firestore';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { MilestoneForm } from './milestone-form';
@@ -38,12 +37,10 @@ type RoadmapMilestoneWithDate = RoadmapMilestone & { startDate: Date; endDate: D
 function MilestoneCard({ 
     milestone, 
     allGoals,
-    onEdit,
     onDelete,
 } : { 
     milestone: RoadmapMilestoneWithDate, 
     allGoals: Goal[] | null,
-    onEdit: () => void,
     onDelete: () => void,
 }) {
     const router = useRouter();
@@ -138,15 +135,17 @@ function MilestoneCard({
     };
 
 
+    const navigateToDetail = () => router.push(`/dashboard/roadmap/${milestone.id}`);
+
     return (
-        <Card className="group transition-all hover:border-primary/50 relative">
+        <Card className="group transition-all hover:border-primary/50 relative cursor-pointer" onClick={navigateToDetail}>
             <div className="absolute top-2 right-2 flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); navigateToDetail(); }}>
                     <Pencil className="h-4 w-4" />
                 </Button>
                 <AlertDialog onOpenChange={() => setDeleteChecked(false)}>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </AlertDialogTrigger>
@@ -170,7 +169,7 @@ function MilestoneCard({
             </div>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg pr-20 cursor-pointer hover:text-primary transition-colors" onClick={onEdit}>{milestone.title}</CardTitle>
+                <CardTitle className="text-lg pr-20 hover:text-primary transition-colors">{milestone.title}</CardTitle>
                     <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
                         {milestone.status}
                     </Badge>
@@ -213,7 +212,7 @@ function MilestoneCard({
                       {subtasks.length > 0 ? (
                         <div className="space-y-1">
                             {subtasks.slice(0, 3).map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-2 text-sm ml-2">
+                            <div key={subtask.id} className="flex items-center gap-2 text-sm ml-2" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                 id={`subtask-${subtask.id}`}
                                 checked={subtask.status !== 'template' || !!subtask.linkedTaskId}
@@ -237,7 +236,7 @@ function MilestoneCard({
                             )}
                         </div>
                       ) : (
-                        <Button size="sm" variant="outline" className="w-full" onClick={handleGenerateChecklist} disabled={isGenerating}>
+                        <Button size="sm" variant="outline" className="w-full" onClick={(e) => { e.stopPropagation(); handleGenerateChecklist(); }} disabled={isGenerating}>
                             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4" />}
                             Gerar Checklist com IA
                         </Button>
@@ -255,7 +254,6 @@ export function RoadmapView() {
   const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingMilestone, setEditingMilestone] = useState<RoadmapMilestone | null>(null);
 
   const milestonesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -302,12 +300,6 @@ export function RoadmapView() {
   }, [milestones, projects]);
 
   const handleOpenCreateDialog = () => {
-    setEditingMilestone(null);
-    setIsFormOpen(true);
-  };
-
-  const handleOpenEditDialog = (milestone: RoadmapMilestone) => {
-    setEditingMilestone(milestone);
     setIsFormOpen(true);
   };
 
@@ -334,36 +326,21 @@ export function RoadmapView() {
         const mappedStatus: MilestoneStatus = statusMap[data.status as keyof typeof statusMap] || 'Não Iniciado';
         const finalLinkedGoalId = data.linkedGoalId === 'none' ? '' : data.linkedGoalId;
 
-        if (editingMilestone) {
-            const milestoneRef = doc(firestore, 'users', user.uid, 'milestones', editingMilestone.id);
-            const updateData = {
-                title: data.title,
-                description: data.description || '',
-                projectId: data.projectId,
-                linkedGoalId: finalLinkedGoalId,
-                endDate: data.dueDate,
-                status: mappedStatus,
-                progress: mappedStatus === 'Concluído' ? 100 : (editingMilestone.progress || 0),
-                updatedAt: new Date(),
-            };
-            await updateDoc(milestoneRef, updateData);
-        } else {
-            const milestonesCollection = collection(firestore, 'users', user.uid, 'milestones');
-            const newData = {
-                title: data.title,
-                description: data.description || '',
-                projectId: data.projectId,
-                linkedGoalId: finalLinkedGoalId,
-                startDate: new Date(),
-                endDate: data.dueDate,
-                status: mappedStatus,
-                progress: 0,
-                userId: user.uid,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-            await addDoc(milestonesCollection, newData);
-        }
+        const milestonesCollection = collection(firestore, 'users', user.uid, 'milestones');
+        const newData = {
+            title: data.title,
+            description: data.description || '',
+            projectId: data.projectId,
+            linkedGoalId: finalLinkedGoalId,
+            startDate: new Date(),
+            endDate: data.dueDate,
+            status: mappedStatus,
+            progress: 0,
+            userId: user.uid,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        await addDoc(milestonesCollection, newData);
     };
 
 
@@ -382,13 +359,9 @@ export function RoadmapView() {
 
         {isFormOpen && (
             <MilestoneForm
-                key={editingMilestone?.id || 'new'}
-                milestone={editingMilestone}
+                key="new"
                 onSave={handleSaveMilestone}
-                onClose={() => {
-                  setIsFormOpen(false);
-                  setEditingMilestone(null);
-                }}
+                onClose={() => setIsFormOpen(false)}
             />
         )}
         
@@ -424,7 +397,6 @@ export function RoadmapView() {
                                   key={milestone.id}
                                   milestone={milestone}
                                   allGoals={goals}
-                                  onEdit={() => handleOpenEditDialog(milestone)}
                                   onDelete={() => handleDeleteMilestone(milestone.id)}
                                 />
                             ))}

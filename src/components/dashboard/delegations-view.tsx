@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { projects } from '@/lib/data';
 import type { Delegation, TeamMember, Goal } from '@/lib/types';
+import { useProjects } from '@/hooks/use-projects';
 import { PlusCircle, Search, Loader2, AlertTriangle, Check, Bell, Users, Pencil, Target } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { format, formatDistanceToNowStrict } from 'date-fns';
@@ -38,6 +38,8 @@ export function DelegationsView() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDelegation, setEditingDelegation] = useState<Delegation | null>(null);
@@ -198,6 +200,7 @@ export function DelegationsView() {
               {sortedDelegations.map(d => {
                   const member = teamMembers?.find(m => m.id === d.delegatedTo);
                   const goal = goals?.find(g => g.id === d.goalId);
+                  const project = activeProjects.find(p => p.id === d.projectId);
                   const dueDate = (d.dueDate as any)?.toDate ? (d.dueDate as any).toDate() : new Date(d.dueDate as string);
                   const urgencyColor = getUrgencyColor(dueDate);
                   const cardStyle = d.status === 'Concluída' ? {} : { borderColor: urgencyColor };
@@ -223,6 +226,12 @@ export function DelegationsView() {
                         </CardHeader>
                         <CardContent className="flex-grow space-y-4">
                             <p className="text-sm text-muted-foreground line-clamp-2">{d.taskDescription}</p>
+                            {project && (
+                                <div className="flex items-center gap-2 text-xs">
+                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: project.iconColor ?? '#22C55E' }} />
+                                    <span className="text-muted-foreground truncate">{project.name}</span>
+                                </div>
+                            )}
                             {goal && (
                                 <div className="flex items-center gap-2 text-xs text-primary/80">
                                     <Target className="h-3 w-3" />

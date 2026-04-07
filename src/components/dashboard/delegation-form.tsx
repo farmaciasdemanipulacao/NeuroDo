@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import type { Delegation, TeamMember, DelegationTaskStatus, DelegationPriority, Goal } from '@/lib/types';
-import { projects } from '@/lib/data';
+import { useProjects } from '@/hooks/use-projects';
 import { Loader2, Save } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -72,6 +72,8 @@ export function DelegationForm({ delegation, teamMembers, goals, onSuccess }: De
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
   
   const form = useForm<DelegationFormValues>({
     resolver: zodResolver(delegationFormSchema),
@@ -242,7 +244,7 @@ export function DelegationForm({ delegation, teamMembers, goals, onSuccess }: De
                     <FormControl><SelectTrigger><SelectValue placeholder="Vincular a um projeto" /></SelectTrigger></FormControl>
                     <SelectContent>
                         <SelectItem value="none">Nenhum</SelectItem>
-                        {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        {activeProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
                 <FormMessage />

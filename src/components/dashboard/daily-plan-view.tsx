@@ -5,8 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { projects } from '@/lib/data';
 import type { Task, UserStats, Goal } from '@/lib/types';
+import { useProjects } from '@/hooks/use-projects';
 import { Calendar, Clock, PlusCircle, Sparkles, User, AlertTriangle, Loader2, Trash2, UserCheck, Target, Pencil, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn, formatValue } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -28,6 +28,8 @@ export function DailyPlanView() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -298,7 +300,7 @@ export function DailyPlanView() {
                               <h2 className="text-xl font-semibold mb-4 capitalize">{timeOfDay}</h2>
                               <div className="space-y-4">
                                   {groupedTasks[timeOfDay].map((task) => {
-                                      const project = projects.find(p => p.id === task.projectId);
+                                      const project = activeProjects.find(p => p.id === task.projectId);
                                       const goal = goals?.find(g => g.id === task.linkedGoalId);
 
                                       const reorderableTasks = groupedTasks[timeOfDay].filter(t => !t.completed && !t.specificTime);
@@ -330,7 +332,7 @@ export function DailyPlanView() {
                                                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                                            {project && (
                                                                <div className="flex items-center gap-2">
-                                                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }}></div>
+                                                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.iconColor ?? '#22C55E' }}></div>
                                                                   <span>{project.name}</span>
                                                                </div>
                                                            )}

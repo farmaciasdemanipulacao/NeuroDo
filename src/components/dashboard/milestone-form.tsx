@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useGoals } from '@/hooks/use-goals';
+import { useProjects } from '@/hooks/use-projects';
 import type { MilestoneStatus } from '@/lib/types';
 
 const milestoneSchema = z.object({
@@ -90,6 +91,8 @@ export function MilestoneForm({ milestone, onSave, onClose }: MilestoneFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { data: goals } = useGoals();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
 
   const form = useForm<MilestoneFormData>({
     resolver: zodResolver(milestoneSchema),
@@ -203,11 +206,13 @@ export function MilestoneForm({ milestone, onSave, onClose }: MilestoneFormProps
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="ENVOX">Envox</SelectItem>
-                        <SelectItem value="FARMACIAS">Farmácias</SelectItem>
-                        <SelectItem value="GERACAO_PJ">Geração PJ</SelectItem>
-                        <SelectItem value="FELIZMENTE">Felizmente</SelectItem>
-                        <SelectItem value="INFLUENCERS">Influencers</SelectItem>
+                        {activeProjects.length === 0 ? (
+                          <SelectItem value="" disabled>Nenhum projeto ativo</SelectItem>
+                        ) : (
+                          activeProjects.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

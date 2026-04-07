@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { projects } from '@/lib/data';
 import type { Document as DocumentType, DocumentType as DocTypeEnum } from '@/lib/types';
+import { useProjects } from '@/hooks/use-projects';
 import { FileText, PlusCircle, Search, Pin, Edit, Loader2, Trash2, Pencil } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
@@ -28,6 +28,8 @@ export function DocumentsView() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('todos');
@@ -122,7 +124,7 @@ export function DocumentsView() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="todos">Todos os Projetos</SelectItem>
-                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    {activeProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -146,7 +148,7 @@ export function DocumentsView() {
       {!isLoading && filteredDocuments.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredDocuments.map(doc => {
-                const project = projects.find(p => p.id === doc.projectId);
+                const project = activeProjects.find(p => p.id === doc.projectId);
                 return (
                     <Card key={doc.id} className="flex flex-col group transition-all relative hover:border-primary/50">
                         <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -190,7 +192,7 @@ export function DocumentsView() {
                         <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
                             {project ? (
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project?.color }}></div>
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project?.iconColor ?? '#22C55E' }}></div>
                                 <span>{project?.name}</span>
                               </div>
                             ) : <div></div>}

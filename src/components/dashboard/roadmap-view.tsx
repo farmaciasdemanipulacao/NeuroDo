@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import type { RoadmapMilestone, Goal, Project, Subtask, MilestoneStatus } from '@/lib/types';
+import type { RoadmapMilestone, Goal, ManagedProject, Subtask, MilestoneStatus } from '@/lib/types';
 import { PlusCircle, Rocket, Calendar, Loader2, Trash2, Map as MapIcon, Pencil, Target, ListChecks, Wand2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -290,7 +290,7 @@ export function RoadmapView() {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'projects'));
   }, [user, firestore]);
-  const { data: projects, isLoading: areProjectsLoading } = useCollection<Project>(projectsQuery);
+  const { data: projects, isLoading: areProjectsLoading } = useCollection<ManagedProject>(projectsQuery);
 
   const isLoading = isUserLoading || areMilestonesLoading || areGoalsLoading || areProjectsLoading;
 
@@ -407,10 +407,10 @@ export function RoadmapView() {
                 {projectsWithMilestones.map(project => (
                     <div key={project.id}>
                         <div className="flex items-center gap-3 mb-4">
-                            <Rocket className="h-6 w-6" style={{ color: project.color }} />
+                            <Rocket className="h-6 w-6" style={{ color: project.iconColor ?? '#22C55E' }} />
                             <h2 className="text-2xl font-bold">{project.name}</h2>
                         </div>
-                        <div className="border-l-2 pl-6 ml-3 space-y-6" style={{ borderColor: project.color }}>
+                        <div className="border-l-2 pl-6 ml-3 space-y-6" style={{ borderColor: project.iconColor ?? '#22C55E' }}>
                             {project.milestones.map(milestone => (
                                 <MilestoneCard
                                   key={milestone.id}

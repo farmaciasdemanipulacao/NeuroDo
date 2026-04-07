@@ -48,7 +48,9 @@ import {
   AlertTriangle,
   Loader2,
   History,
+  HelpCircle,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import type { ManagedProject, ProjectCategory, ManagedProjectStatus } from '@/lib/types';
 import { ProjectIcon } from './project-icon';
@@ -581,7 +583,61 @@ export function ProjectsView() {
         <div className="flex items-center gap-3">
           <FolderKanban className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-xl font-bold">Meus Projetos</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xl font-bold">Meus Projetos</h1>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Regras de projetos"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 text-sm space-y-3" align="start">
+                  <p className="font-semibold text-base">📋 Regras do Portfólio</p>
+                  <p className="text-muted-foreground text-xs">
+                    Limites de carga cognitiva: cérebros TDAH perdem foco quando gerenciam
+                    muitos projetos simultaneamente. Esses limites existem para que você
+                    entregue mais com menos esforço mental.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-muted/40">
+                      <span className="text-base">🚀</span>
+                      <div>
+                        <p className="font-medium">Execução — máx. {MAX_EXECUTION} projetos</p>
+                        <p className="text-xs text-muted-foreground">
+                          Projetos que você opera diretamente. Recebem sua energia criativa e decisória.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-muted/40">
+                      <span className="text-base">👁</span>
+                      <div>
+                        <p className="font-medium">Acompanhamento — máx. {MAX_OVERSIGHT} projetos</p>
+                        <p className="text-xs text-muted-foreground">
+                          Projetos delegados onde você revisa resultados e toma decisões pontuais.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-muted/40">
+                      <span className="text-base">🌱</span>
+                      <div>
+                        <p className="font-medium">Pessoal — máx. {MAX_PERSONAL} projetos</p>
+                        <p className="text-xs text-muted-foreground">
+                          Vida pessoal, saúde e família. Poucos focos para manter equilíbrio real.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground border-t pt-2">
+                    Projetos pausados não contam nos limites. Pause projetos de baixa prioridade
+                    para liberar slots e manter o foco onde importa.
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </div>
             <p className="text-xs text-muted-foreground">
               Gerencie seu portfólio com limites de carga cognitiva
             </p>

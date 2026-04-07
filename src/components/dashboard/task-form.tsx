@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking, updateDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, query } from 'firebase/firestore';
 import type { Task, TeamMember, TaskType, Delegation, Goal } from '@/lib/types';
-import { projects } from '@/lib/data';
+import { useProjects } from '@/hooks/use-projects';
 import { Loader2, Save, User, UserCheck, Target, HelpCircle, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn, formatValue } from '@/lib/utils';
@@ -113,6 +113,8 @@ export function TaskForm({ task, goals, closeDialog }: TaskFormProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = managedProjects?.filter(p => p.status === 'active') ?? [];
 
   const teamQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -248,7 +250,7 @@ export function TaskForm({ task, goals, closeDialog }: TaskFormProps) {
         <FormField control={form.control} name="content" render={({ field }) => ( <FormItem> <FormLabel>Descrição da Tarefa</FormLabel> <FormControl><Textarea placeholder="Ex: Rascunhar o novo texto de marketing..." {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Tipo de Tarefa</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger></FormControl><SelectContent>{taskTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-          <FormField control={form.control} name="projectId" render={({ field }) => ( <FormItem><FormLabel>Projeto</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um projeto" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">Nenhum</SelectItem>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+          <FormField control={form.control} name="projectId" render={({ field }) => ( <FormItem><FormLabel>Projeto</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um projeto" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">Nenhum</SelectItem>{activeProjects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
         </div>
         <FormField control={form.control} name="linkedGoalId" render={({ field }) => ( <FormItem><FormLabel>Contribui para qual Meta?</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Vincular a uma meta" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">Nenhuma meta</SelectItem>{goals.map(g => <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
         

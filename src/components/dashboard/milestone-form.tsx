@@ -207,7 +207,7 @@ export function MilestoneForm({ milestone, onSave, onClose }: MilestoneFormProps
                       </FormControl>
                       <SelectContent>
                         {activeProjects.length === 0 ? (
-                          <SelectItem value="" disabled>Nenhum projeto ativo</SelectItem>
+                          <SelectItem value="__empty__" disabled>Nenhum projeto ativo</SelectItem>
                         ) : (
                           activeProjects.map(p => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>

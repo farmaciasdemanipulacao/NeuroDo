@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -107,7 +108,7 @@ function MilestoneCard({
             const result = await breakdownMilestone({
                 milestoneTitle: milestone.title,
                 milestoneDescription: milestone.description,
-                dueDate: milestone.endDate, // milestone.endDate is already a Date object
+                dueDate: milestone.endDate,
                 projectId: milestone.projectId,
             });
     
@@ -133,18 +134,24 @@ function MilestoneCard({
         }
     };
 
-
-    const navigateToDetail = () => router.push(`/dashboard/roadmap/${milestone.id}`);
+    const detailHref = `/dashboard/roadmap/${milestone.id}`;
 
     return (
-        <Card className="group transition-all hover:border-primary/50 relative cursor-pointer" onClick={navigateToDetail}>
-            <div className="absolute top-2 right-2 flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); navigateToDetail(); }}>
+        <div className="relative group/card">
+            {/* Action buttons positioned outside the Link to avoid nesting interactive elements inside <a> */}
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => router.push(detailHref)}
+                    title="Abrir detalhes do marco"
+                >
                     <Pencil className="h-4 w-4" />
                 </Button>
                 <AlertDialog onOpenChange={() => setDeleteChecked(false)}>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </AlertDialogTrigger>
@@ -166,83 +173,101 @@ function MilestoneCard({
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                <CardTitle className="text-lg pr-20 hover:text-primary transition-colors">{milestone.title}</CardTitle>
-                    <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
-                        {milestone.status}
-                    </Badge>
-                </div>
-                <CardDescription className="flex items-center gap-2 pt-1 text-xs">
-                    <Calendar className="h-3 w-3"/>
-                    <span>
-                        {format(milestone.startDate, "dd MMM yyyy", { locale: ptBR })} - {format(milestone.endDate, "dd MMM yyyy", { locale: ptBR })}
-                    </span>
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <div className="mb-1 flex justify-between items-baseline text-xs">
-                        <p className="font-medium">Progresso</p>
-                        <p className="font-bold">{milestone.progress}%</p>
-                    </div>
-                    <Progress value={milestone.progress} className="h-2" />
-                </div>
-                {linkedGoal && (
-                    <Badge variant="outline" className="font-normal">
-                        <div className="flex items-center gap-1.5">
-                            <Target className="h-3 w-3" />
-                            <span>Meta: {linkedGoal.title}</span>
+
+            {/* Card wrapped in Link for reliable navigation */}
+            <Link href={detailHref} className="block">
+                <Card className="transition-all hover:border-primary/50 cursor-pointer">
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg pr-20 hover:text-primary transition-colors">{milestone.title}</CardTitle>
+                            <Badge variant="outline" className={cn("ml-4", getStatusVariant(milestone.status))}>
+                                {milestone.status}
+                            </Badge>
                         </div>
-                    </Badge>
-                )}
-                 {subtasks && (
-                    <div className="mt-4 pt-4 border-t border-dashed space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <ListChecks className="h-4 w-4" />
-                        <span>Checklist ({completedSubtasks}/{subtasks.length})</span>
-                      </div>
-                      {subtasks.length > 0 ? (
-                        <div className="space-y-1">
-                            {subtasks.slice(0, 3).map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-2 text-sm ml-2" onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                id={`subtask-${subtask.id}`}
-                                checked={subtask.status !== 'template' || !!subtask.linkedTaskId}
-                                disabled={subtask.status !== 'template' || !!subtask.linkedTaskId}
-                                onCheckedChange={() => handleCreateTaskFromSubtask(subtask)}
-                                />
-                                <label htmlFor={`subtask-${subtask.id}`} className={cn("flex-1", (subtask.status !== 'template' || !!subtask.linkedTaskId) && "text-muted-foreground line-through")}>
-                                {subtask.title}
-                                </label>
-                                {(subtask.status === 'scheduled' || !!subtask.linkedTaskId) && (
-                                <Badge variant="secondary" className="text-xs">
-                                    Agendada
-                                </Badge>
+                        <CardDescription className="flex items-center gap-2 pt-1 text-xs">
+                            <Calendar className="h-3 w-3"/>
+                            <span>
+                                {format(milestone.startDate, "dd MMM yyyy", { locale: ptBR })} - {format(milestone.endDate, "dd MMM yyyy", { locale: ptBR })}
+                            </span>
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <div className="mb-1 flex justify-between items-baseline text-xs">
+                                <p className="font-medium">Progresso</p>
+                                <p className="font-bold">{milestone.progress}%</p>
+                            </div>
+                            <Progress value={milestone.progress} className="h-2" />
+                        </div>
+                        {linkedGoal && (
+                            <Badge variant="outline" className="font-normal">
+                                <div className="flex items-center gap-1.5">
+                                    <Target className="h-3 w-3" />
+                                    <span>Meta: {linkedGoal.title}</span>
+                                </div>
+                            </Badge>
+                        )}
+                        {subtasks && (
+                            <div className="mt-4 pt-4 border-t border-dashed space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                    <ListChecks className="h-4 w-4" />
+                                    <span>Checklist ({completedSubtasks}/{subtasks.length})</span>
+                                </div>
+                                {subtasks.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {subtasks.slice(0, 3).map(subtask => (
+                                            <div
+                                                key={subtask.id}
+                                                className="flex items-center gap-2 text-sm ml-2"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Checkbox
+                                                    id={`subtask-${subtask.id}`}
+                                                    checked={subtask.status !== 'template' || !!subtask.linkedTaskId}
+                                                    disabled={subtask.status !== 'template' || !!subtask.linkedTaskId}
+                                                    onCheckedChange={() => handleCreateTaskFromSubtask(subtask)}
+                                                />
+                                                <label htmlFor={`subtask-${subtask.id}`} className={cn("flex-1", (subtask.status !== 'template' || !!subtask.linkedTaskId) && "text-muted-foreground line-through")}>
+                                                    {subtask.title}
+                                                </label>
+                                                {(subtask.status === 'scheduled' || !!subtask.linkedTaskId) && (
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        Agendada
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {subtasks.length > 3 && (
+                                            <button
+                                                type="button"
+                                                className="text-xs text-primary underline-offset-4 hover:underline ml-8"
+                                                onClick={(e) => { e.preventDefault(); router.push(detailHref); }}
+                                            >
+                                                Ver todos ({subtasks.length})
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="w-full flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                                        onClick={(e) => { e.preventDefault(); handleGenerateChecklist(); }}
+                                        disabled={isGenerating}
+                                    >
+                                        {isGenerating ? <Loader2 className="h-4 w-4 animate-spin"/> : <Wand2 className="h-4 w-4" />}
+                                        Gerar Checklist com IA
+                                    </button>
                                 )}
                             </div>
-                            ))}
-                            {subtasks.length > 3 && (
-                            <Button variant="link" size="sm" className="text-xs h-auto p-0 ml-8" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/roadmap/${milestone.id}`); }}>
-                                Ver todos ({subtasks.length})
-                            </Button>
-                            )}
-                        </div>
-                      ) : (
-                        <Button size="sm" variant="outline" className="w-full" onClick={(e) => { e.stopPropagation(); handleGenerateChecklist(); }} disabled={isGenerating}>
-                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4" />}
-                            Gerar Checklist com IA
-                        </Button>
-                      )}
-                    </div>
-                  )}
-            </CardContent>
-        </Card>
-    )
+                        )}
+                    </CardContent>
+                </Card>
+            </Link>
+        </div>
+    );
 }
 
 export function RoadmapView() {
-  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();

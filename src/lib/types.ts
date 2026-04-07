@@ -388,3 +388,37 @@ export interface EnergyCheckinRecord {
   medicationsTaken?: Record<string, boolean>; // medicationId -> tomou?
   createdAt: string; // ISO string
 }
+
+// ── Projetos Gerenciados ────────────────────────────────────────────────────
+
+export type ProjectCategory = 'execution' | 'oversight' | 'personal';
+export type ProjectValueType = 'financial' | 'amplifier' | 'personal' | 'experimental';
+export type ManagedProjectStatus = 'active' | 'paused' | 'completed' | 'pending_deletion';
+export type OwnerRole = 'leader' | 'trainer' | 'consultant' | 'away';
+
+export interface ChangelogEntry {
+  id: string;
+  date: string; // ISO string
+  action: 'created' | 'updated' | 'status_changed' | 'category_changed' | 'priority_changed' | 'deletion_scheduled' | 'deletion_cancelled';
+  description: string;
+  previousValue?: string;
+  newValue?: string;
+}
+
+export interface ManagedProject {
+  id: string;
+  userId: string;
+  name: string;
+  description: string;
+  parentId: string | null;
+  category: ProjectCategory;
+  valueType: ProjectValueType;
+  status: ManagedProjectStatus;
+  priority: number | null; // ordem dentro da categoria (apenas execution tem prioridade obrigatória)
+  responsibleName: string | null;
+  ownerRole: OwnerRole;
+  changelog: ChangelogEntry[];
+  deletionScheduledAt: string | null; // ISO — após 48h executa exclusão real
+  createdAt: string;
+  updatedAt: string;
+}

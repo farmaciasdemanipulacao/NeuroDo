@@ -43,6 +43,7 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Logo } from './logo';
 import { useProjects } from '@/hooks/use-projects';
 import type { ManagedProject } from '@/lib/types';
 import { useUser } from '@/firebase/provider';

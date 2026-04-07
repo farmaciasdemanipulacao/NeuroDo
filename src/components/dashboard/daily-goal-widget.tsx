@@ -2,24 +2,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Loader2, Calendar } from "lucide-react";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query } from "firebase/firestore";
 import type { Task } from "@/lib/types";
 import { useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { useSharedTasks } from '@/context/dashboard-data-provider';
 
 
 export function DailyGoalWidget() {
-    const firestore = useFirestore();
-    const { user, isUserLoading } = useUser();
-
-    const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return query(collection(firestore, 'users', user.uid, 'tasks'));
-    }, [firestore, user]);
-    const { data: tasks, isLoading: areTasksLoading } = useCollection<Task>(tasksQuery);
-
-    const isLoading = isUserLoading || areTasksLoading;
+    const { data: tasks, isLoading } = useSharedTasks();
 
     const mitTasks = useMemo(() => {
         if (!tasks) return [];

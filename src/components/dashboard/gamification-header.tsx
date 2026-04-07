@@ -1,13 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Flame, Loader2 } from 'lucide-react';
 import type { UserStats } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useSharedUserStats } from '@/context/dashboard-data-provider';
 
 const getBusinessTitle = (level: number): string => {
   if (level >= 50) return 'Soberano';
@@ -33,17 +32,7 @@ const calculateLevelInfo = (totalXP: number) => {
 
 
 export function GamificationHeader() {
-  const { user, isUserLoading: isAuthLoading } = useUser();
-  const firestore = useFirestore();
-
-  const userStatsRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid, 'user_stats', 'data');
-  }, [user, firestore]);
-
-  const { data: userStats, isLoading: areStatsLoading } = useDoc<UserStats>(userStatsRef);
-
-  const isLoading = isAuthLoading || areStatsLoading;
+  const { data: userStats, isLoading } = useSharedUserStats();
 
   const { level, currentXP, nextLevelXP, title, progressPercentage } = useMemo(() => {
     const stats = userStats;

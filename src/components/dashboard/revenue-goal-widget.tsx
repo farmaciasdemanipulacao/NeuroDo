@@ -1,8 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
 import type { Goal, Task } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,23 +8,10 @@ import { Loader2, Target } from 'lucide-react';
 import { projects } from '@/lib/data';
 import { Badge } from '../ui/badge';
 import { formatValue } from '@/lib/utils';
+import { useDashboardData } from '@/context/dashboard-data-provider';
 
 export function RevenueGoalWidget() {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const allGoalsQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, 'users', user.uid, 'goals'));
-  }, [user, firestore]);
-  const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(allGoalsQuery);
-  
-  const allTasksQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, 'users', user.uid, 'tasks'));
-  }, [user, firestore]);
-  const { data: tasks, isLoading: areTasksLoading } = useCollection<Task>(allTasksQuery);
-
+  const { goals, areGoalsLoading, tasks, areTasksLoading } = useDashboardData();
 
   const isLoading = areGoalsLoading || areTasksLoading;
 

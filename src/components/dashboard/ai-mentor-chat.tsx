@@ -85,7 +85,10 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   const firebaseCtx = useContext(FirebaseContext);
   const firestore = firebaseCtx?.firestore ?? null;
   const user = firebaseCtx?.user ?? null;
-  const mentorProfileRef = user && firestore ? doc(firestore, 'users', user.uid, 'mentorDo', 'profile') : null;
+  const mentorProfileRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid, 'mentorDo', 'profile');
+  }, [user, firestore]);
   const { data: mentorProfile } = useDoc(mentorProfileRef);
 
   const milestonesQuery = useMemoFirebase(() => {

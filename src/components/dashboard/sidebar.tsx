@@ -16,6 +16,7 @@ import {
   TrendingUp,
   UserCheck,
   Users,
+  CreditCard,
   LogOut,
   Settings,
   ShieldCheck,
@@ -240,6 +241,12 @@ export function AppSidebar() {
                                 <Link href="/dashboard/settings" className="flex items-center gap-2">
                                     <Settings className="h-4 w-4" />
                                     <span>Configurações</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard/billing" className="flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4" />
+                                    <span>Cobrança</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

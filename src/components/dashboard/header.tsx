@@ -1,6 +1,5 @@
 'use client';
 
-import { UserNav } from '@/components/dashboard/user-nav';
 import { IdeaCatcher } from './idea-catcher';
 import { Button } from '../ui/button';
 import { Zap, AlertTriangle } from 'lucide-react';
@@ -29,7 +28,6 @@ export function Header({ onEnergyCheckinClick, onMentorSOSClick }: HeaderProps) 
           Energia{energyLevel !== null ? `: ${energyLevel}` : ''}
         </Button>
         <IdeaCatcher />
-        <UserNav />
       </div>
     </header>
   );

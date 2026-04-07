@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -184,6 +185,24 @@ export function ProjectFormDialog({
     },
   });
 
+  // Reseta o form com dados corretos toda vez que o dialog abre
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: project?.name ?? '',
+        description: project?.description ?? '',
+        category: project?.category ?? 'execution',
+        valueType: project?.valueType ?? 'financial',
+        ownerRole: project?.ownerRole ?? 'leader',
+        responsibleName: project?.responsibleName ?? null,
+        parentId: project?.parentId ?? null,
+        icon: project?.icon ?? 'Briefcase',
+        iconColor: project?.iconColor ?? '#22C55E',
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const { isSubmitting } = form.formState;
   const category = form.watch('category');
   const selectedIcon = form.watch('icon');
@@ -218,7 +237,11 @@ export function ProjectFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        aria-describedby={undefined}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
         </DialogHeader>

@@ -67,7 +67,7 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
         comment: comment.trim(),
         date: dateStr,
         time: timeStr,
-        medicationsTaken: medications.length > 0 ? medicationsTaken : undefined,
+        ...(medications.length > 0 ? { medicationsTaken } : {}),
         createdAt: now.toISOString(),
       }, {});
     }

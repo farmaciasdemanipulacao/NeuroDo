@@ -42,6 +42,7 @@ import {
 } from '@/ai/flows/analyze-energy-patterns';
 import { useEnergyCheckins } from '@/hooks/use-energy-checkins';
 import { useAboutMe } from '@/hooks/use-about-me';
+import { cn } from '@/lib/utils';
 
 // ── Constantes de cores e limiares de energia ────────────────────────────────
 

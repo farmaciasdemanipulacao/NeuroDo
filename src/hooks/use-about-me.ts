@@ -5,6 +5,13 @@ import { useFirestore, useUser, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import type { MentorDoProfile, Medication } from '@/lib/types';
 
+/** Remove campos undefined e o campo 'id' antes de salvar no Firestore */
+function sanitize<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([k, v]) => k !== 'id' && v !== undefined)
+  ) as Partial<T>;
+}
+
 /**
  * Lê e escreve o perfil pessoal do usuário (Sobre Mim / MentorDo)
  * em /users/{uid}/profile/mentordo
@@ -27,8 +34,8 @@ export function useAboutMe() {
       await setDoc(
         ref,
         {
-          ...profile,
-          ...updates,
+          ...sanitize(profile ?? {}),
+          ...sanitize(updates),
           userId: user.uid,
           lastUpdated: new Date().toISOString(),
         },

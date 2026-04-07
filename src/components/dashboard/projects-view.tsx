@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ManagedProject, ProjectCategory, ManagedProjectStatus } from '@/lib/types';
+import { ProjectIcon } from './project-icon';
 import {
   Dialog,
   DialogContent,
@@ -226,6 +227,15 @@ function ProjectCard({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
+                  <div
+                    className="flex items-center justify-center w-7 h-7 rounded-md shrink-0"
+                    style={{
+                      backgroundColor: (project.iconColor ?? '#22C55E') + '22',
+                      border: `1px solid ${project.iconColor ?? '#22C55E'}44`,
+                    }}
+                  >
+                    <ProjectIcon icon={project.icon} iconColor={project.iconColor} className="h-4 w-4" />
+                  </div>
                   <h3 className="font-semibold text-sm truncate">{project.name}</h3>
                   {isPendingDeletion && (
                     <Badge variant="outline" className="text-red-400 border-red-400/30 bg-red-400/10 shrink-0">

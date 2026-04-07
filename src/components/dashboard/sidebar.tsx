@@ -46,6 +46,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Logo } from './logo';
 import { useProjects } from '@/hooks/use-projects';
 import type { ManagedProject } from '@/lib/types';
+import { ProjectIcon } from './project-icon';
 import { useUser } from '@/firebase/provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -219,7 +220,7 @@ export function AppSidebar() {
                           asChild
                         >
                           <span>
-                            <FolderKanban className="h-4 w-4 text-primary/70" />
+                            <ProjectIcon icon={project.icon} iconColor={project.iconColor} />
                             <span className="truncate">{project.name}</span>
                           </span>
                         </SidebarMenuButton>

@@ -417,6 +417,8 @@ export interface ManagedProject {
   priority: number | null; // ordem dentro da categoria (apenas execution tem prioridade obrigatória)
   responsibleName: string | null;
   ownerRole: OwnerRole;
+  icon: string; // nome do ícone Lucide (ex: "Briefcase")
+  iconColor: string; // hex color (ex: "#22C55E")
   changelog: ChangelogEntry[];
   deletionScheduledAt: string | null; // ISO — após 48h executa exclusão real
   createdAt: string;

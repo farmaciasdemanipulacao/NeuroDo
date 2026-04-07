@@ -10,7 +10,6 @@ import {
   FolderKanban,
   LayoutDashboard,
   Map,
-  Rocket,
   Timer,
   Target,
   CalendarCheck,
@@ -44,7 +43,8 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Logo } from './logo';
+import { useProjects } from '@/hooks/use-projects';
+import type { ManagedProject } from '@/lib/types';
 import { useUser } from '@/firebase/provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -70,18 +70,21 @@ const revenueSubItems = [
   { href: '/dashboard/revenue/pj', icon: Building2, label: 'Receitas PJ' },
 ];
 
-const projects = [
-    { name: 'ENVOX', icon: Rocket, color: 'text-project-envox' },
-    { name: 'FARMÁCIAS', icon: Rocket, color: 'text-project-farmacias' },
-    { name: 'GERAÇÃO PJ', icon: Rocket, color: 'text-project-geracao-pj' },
-    { name: 'FELIZMENTE', icon: Rocket, color: 'text-project-felizmente' },
-    { name: 'INFLUENCERS', icon: Rocket, color: 'text-project-influencers' },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { user, isAdmin, signOut } = useUser();
+  const { projects: managedProjects, isLoading: projectsLoading } = useProjects();
+
+  // Top 5: execução primeiro (por prioridade), depois os demais ativos
+  const topProjects = (managedProjects ?? [])
+    .filter((p) => p.status === 'active')
+    .sort((a, b) => {
+      if (a.category === 'execution' && b.category !== 'execution') return -1;
+      if (a.category !== 'execution' && b.category === 'execution') return 1;
+      return (a.priority ?? 99) - (b.priority ?? 99);
+    })
+    .slice(0, 5);
 
   const isRevenueActive = pathname.startsWith('/dashboard/revenue');
 
@@ -187,18 +190,42 @@ export function AppSidebar() {
 
              <SidebarMenu>
                 <p className="px-2 mb-2 text-xs font-semibold text-muted-foreground tracking-wider group-data-[collapsible=icon]:hidden">PROJETOS</p>
-                {projects.map(({ name, icon: Icon, color }) => (
-                    <SidebarMenuItem key={name}>
-                         <Link href="#" passHref onClick={handleLinkClick}>
-                             <SidebarMenuButton tooltip={name} asChild>
-                                 <span>
-                                    <Icon className={cn(color)} />
-                                    <span>{name}</span>
-                                </span>
-                            </SidebarMenuButton>
-                        </Link>
+                {projectsLoading ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled className="opacity-50">
+                      <FolderKanban className="h-4 w-4" />
+                      <span>Carregando...</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : topProjects.length === 0 ? (
+                  <SidebarMenuItem>
+                    <Link href="/dashboard/projects" passHref onClick={handleLinkClick}>
+                      <SidebarMenuButton tooltip="Cadastrar projetos" asChild>
+                        <span className="text-muted-foreground">
+                          <FolderKanban className="h-4 w-4" />
+                          <span>Sem projetos</span>
+                        </span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                ) : (
+                  topProjects.map((project) => (
+                    <SidebarMenuItem key={project.id}>
+                      <Link href="/dashboard/projects" passHref onClick={handleLinkClick}>
+                        <SidebarMenuButton
+                          tooltip={project.name}
+                          isActive={pathname === '/dashboard/projects'}
+                          asChild
+                        >
+                          <span>
+                            <FolderKanban className="h-4 w-4 text-primary/70" />
+                            <span className="truncate">{project.name}</span>
+                          </span>
+                        </SidebarMenuButton>
+                      </Link>
                     </SidebarMenuItem>
-                ))}
+                  ))
+                )}
              </SidebarMenu>
         </SidebarContent>
 

@@ -107,6 +107,10 @@ const AnalyzeEnergyPatternsOutputSchema = z.object({
 
 export type AnalyzeEnergyPatternsOutput = z.infer<typeof AnalyzeEnergyPatternsOutputSchema>;
 
+export type AnalyzeEnergyPatternsResult =
+  | ({ error?: never } & AnalyzeEnergyPatternsOutput)
+  | { error: string; errorCode: string };
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const DOW_PT: Record<number, string> = {
@@ -123,14 +127,14 @@ const DOW_PT: Record<number, string> = {
 
 export async function analyzeEnergyPatterns(
   input: AnalyzeEnergyPatternsInput
-): Promise<AnalyzeEnergyPatternsOutput> {
+): Promise<AnalyzeEnergyPatternsResult> {
   if (!openai || initError) {
-    throw new Error(`Erro de configuração do servidor: ${initError}`);
+    return { error: `Erro de configuração do servidor: ${initError}`, errorCode: 'CONFIG_ERROR' };
   }
 
   const validated = AnalyzeEnergyPatternsInputSchema.safeParse(input);
   if (!validated.success) {
-    throw new Error(`Input inválido: ${validated.error.message}`);
+    return { error: `Input inválido: ${validated.error.message}`, errorCode: 'VALIDATION_ERROR' };
   }
 
   const { energyHistory, stats, userName } = validated.data;
@@ -178,7 +182,7 @@ Retorne APENAS o objeto JSON com os campos: overallPattern, insights (3-5 itens 
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
-      throw new Error('A IA não retornou conteúdo.');
+      return { error: 'A IA não retornou conteúdo.', errorCode: 'EMPTY_RESPONSE' };
     }
 
     const parsed = JSON.parse(rawOutput);
@@ -186,13 +190,13 @@ Retorne APENAS o objeto JSON com os campos: overallPattern, insights (3-5 itens 
 
     if (!validatedOutput.success) {
       console.error('Validação do output falhou:', validatedOutput.error);
-      throw new Error('A IA retornou um formato inesperado. Tente novamente.');
+      return { error: 'A IA retornou um formato inesperado. Tente novamente.', errorCode: 'INVALID_OUTPUT' };
     }
 
     return validatedOutput.data;
   } catch (error: unknown) {
     console.error('Erro ao comunicar com OpenAI:', error);
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Erro ao analisar padrões de energia: ${message}`);
+    return { error: `Erro ao analisar padrões de energia: ${message}`, errorCode: 'OPENAI_ERROR' };
   }
 }

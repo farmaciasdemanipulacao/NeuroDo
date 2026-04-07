@@ -230,11 +230,22 @@ export function EnergyDashboard() {
         },
         userName: appUser?.displayName?.split(' ')[0] ?? undefined,
       });
+
+      if (result.error) {
+        toast({
+          title: 'Erro na análise',
+          description: result.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setAiResult(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Não foi possível analisar os padrões. Tente novamente.';
       toast({
         title: 'Erro na análise',
-        description: err.message ?? 'Não foi possível analisar os padrões. Tente novamente.',
+        description: message,
         variant: 'destructive',
       });
     } finally {

@@ -19,6 +19,7 @@ import {
   CreditCard,
   LogOut,
   Settings,
+  User,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -244,6 +245,12 @@ export function AppSidebar() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard/settings/sobre-mim" className="flex items-center gap-2">
+                                    <User className="h-4 w-4" />
+                                    <span>Sobre Mim</span>
+                                </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/dashboard/settings" className="flex items-center gap-2">
                                     <Settings className="h-4 w-4" />

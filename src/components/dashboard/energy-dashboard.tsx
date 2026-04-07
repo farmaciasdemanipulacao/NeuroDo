@@ -26,6 +26,8 @@ import {
   Sparkles,
   RefreshCw,
   Moon,
+  Clock,
+  Pill,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,7 +40,8 @@ import {
   analyzeEnergyPatterns,
   type AnalyzeEnergyPatternsOutput,
 } from '@/ai/flows/analyze-energy-patterns';
-import { cn } from '@/lib/utils';
+import { useEnergyCheckins } from '@/hooks/use-energy-checkins';
+import { useAboutMe } from '@/hooks/use-about-me';
 
 // ── Constantes de cores e limiares de energia ────────────────────────────────
 
@@ -158,6 +161,8 @@ export function EnergyDashboard() {
   const { data, stats, isLoading } = useEnergyHistory();
   const { appUser } = useUser();
   const { toast } = useToast();
+  const { checkins, isLoading: isCheckinsLoading } = useEnergyCheckins(30);
+  const { profile } = useAboutMe();
 
   const [aiResult, setAiResult] = useState<AnalyzeEnergyPatternsOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -594,6 +599,66 @@ export function EnergyDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Seção de Check-ins com Hora ───────────────────────────────────────── */}
+      {(checkins.length > 0 || isCheckinsLoading) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Check-ins de Energia do Dia
+            </CardTitle>
+            <CardDescription>Registros com horário — acompanhe as variações ao longo do dia</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isCheckinsLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {checkins.slice(0, 15).map((c) => {
+                  const medications = profile?.medications ?? [];
+                  const takenMeds = medications.filter(m => c.medicationsTaken?.[m.id] === true);
+                  const notTakenMeds = medications.filter(m => c.medicationsTaken?.[m.id] === false);
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-start gap-3 rounded-lg border border-border/40 px-3 py-2.5"
+                    >
+                      <div className={`mt-0.5 flex items-center justify-center rounded-md px-2 py-1 text-sm font-bold border ${energyBadgeClass(c.energyLevel)}`}>
+                        {c.energyLevel}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {c.date} · {c.time ?? '—'}
+                          </span>
+                          {takenMeds.length > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-green-400">
+                              <Pill className="h-3 w-3" />
+                              {takenMeds.map(m => m.name).join(', ')} ✓
+                            </span>
+                          )}
+                          {notTakenMeds.length > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                              <Pill className="h-3 w-3" />
+                              {notTakenMeds.map(m => m.name).join(', ')} ✗
+                            </span>
+                          )}
+                        </div>
+                        {c.comment && (
+                          <p className="text-xs text-muted-foreground truncate">{c.comment}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Seção 4: Insights da IA ───────────────────────────────────────────── */}
       <Card className="border-primary/30 bg-primary/5">

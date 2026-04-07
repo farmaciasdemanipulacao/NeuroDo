@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useUser } from '@/firebase/provider';
 import { usePreferences } from '@/hooks/use-preferences';
 import { useUserStats } from '@/hooks/use-user-stats';
-import { Settings as SettingsIcon, Bell, Palette, Timer, User, Loader2, CheckCircle } from 'lucide-react';
+import { Bell, Palette, Timer, User, Loader2, CheckCircle, Brain, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -56,6 +57,24 @@ export default function DashboardSettingsPage() {
         {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
       <p className="text-muted-foreground">Personalize sua experiência no NeuroDO.</p>
+
+      {/* Card — Sobre Mim */}
+      <Link href="/dashboard/settings/sobre-mim">
+        <Card className="border-primary/30 hover:border-primary/60 transition-colors cursor-pointer">
+          <CardContent className="flex items-center justify-between py-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Brain className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Sobre Mim</p>
+                <p className="text-xs text-muted-foreground">Perfil pessoal, medicamentos e contexto para o MentorDo</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* Perfil */}
       <Card>

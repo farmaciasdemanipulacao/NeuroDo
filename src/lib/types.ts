@@ -265,6 +265,15 @@ export interface MentorDoPreferences {
   attentionFocus?: string;
 }
 
+export interface Medication {
+  id: string;
+  name: string;
+  dosage?: string;
+  frequency: 'diária' | 'quando necessário' | 'semanal' | 'outra';
+  frequencyNote?: string;
+  notes?: string;
+}
+
 export interface AddictionInfo {
   name: string;
   frequency?: string;
@@ -276,11 +285,16 @@ export interface AddictionInfo {
 export interface MentorDoProfile {
   id?: string;
   userId: string;
+  name?: string;
+  age?: number;
   neurodivergence?: string[];
-  medication?: string;
+  medication?: string; // legado — usar medications[]
+  medications?: Medication[];
   diagnoses?: string;
   limitingBeliefs?: string;
   challenges?: string;
+  workStyle?: string;
+  lifeGoals?: string;
   preferences?: MentorDoPreferences;
   addictions?: AddictionInfo[];
   lastUpdated?: string | { toDate: () => Date };
@@ -361,5 +375,16 @@ export interface NightlyReview {
   aiEnergyPattern: string;
   aiSuggestedTasks: AISuggestedTask[];
   aiMotivationalNote: string;
+  createdAt: string; // ISO string
+}
+
+export interface EnergyCheckinRecord {
+  id: string;
+  userId: string;
+  date: string;   // YYYY-MM-DD
+  time: string;   // HH:MM
+  energyLevel: number;
+  comment?: string;
+  medicationsTaken?: Record<string, boolean>; // medicationId -> tomou?
   createdAt: string; // ISO string
 }

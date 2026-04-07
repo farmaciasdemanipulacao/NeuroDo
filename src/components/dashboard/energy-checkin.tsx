@@ -12,11 +12,14 @@ import {
 } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useApp } from '@/hooks/use-app';
 import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useAboutMe } from '@/hooks/use-about-me';
 import { doc } from 'firebase/firestore';
-import { Zap } from 'lucide-react';
+import { Zap, Pill } from 'lucide-react';
 
 const energyConfig = {
     0: { label: "Manutenção", color: "bg-energy-maint", description: "Apenas mantendo as luzes acesas." },
@@ -37,9 +40,17 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { profile } = useAboutMe();
   const [currentValue, setCurrentValue] = useState([5]);
   const [comment, setComment] = useState('');
+  const [medicationsTaken, setMedicationsTaken] = useState<Record<string, boolean>>({});
   const energyInfo = useMemo(() => energyConfig[currentValue[0] as keyof typeof energyConfig], [currentValue]);
+
+  const medications = profile?.medications ?? [];
+
+  const handleToggleMed = (medId: string) => {
+    setMedicationsTaken((prev) => ({ ...prev, [medId]: !prev[medId] }));
+  };
 
   const handleSubmit = () => {
     setEnergyLevel(currentValue[0]);
@@ -48,13 +59,16 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
       const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
       const docId = `${dateStr}-${pad(now.getHours())}-${pad(now.getMinutes())}`;
       const checkinRef = doc(firestore, 'users', user.uid, 'energy_checkins', docId);
       setDocumentNonBlocking(checkinRef, {
         energyLevel: currentValue[0],
         comment: comment.trim(),
-        createdAt: now.toISOString(),
         date: dateStr,
+        time: timeStr,
+        medicationsTaken: medications.length > 0 ? medicationsTaken : undefined,
+        createdAt: now.toISOString(),
       }, {});
     }
 
@@ -65,6 +79,7 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
     });
 
     setComment('');
+    setMedicationsTaken({});
     onOpenChange(false);
   };
 
@@ -72,7 +87,7 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Check-in de Energia Diário</DialogTitle>
+          <DialogTitle>Check-in de Energia</DialogTitle>
           <DialogDescription>
             Como você está se sentindo agora? Sua resposta ajuda a personalizar seu dia.
           </DialogDescription>
@@ -95,6 +110,37 @@ export function EnergyCheckin({ open, onOpenChange }: { open: boolean, onOpenCha
             <span>Média</span>
             <span>Alta</span>
           </div>
+
+          {/* Medicamentos */}
+          {medications.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <Pill className="h-3.5 w-3.5" />
+                <span>Medicamentos de hoje</span>
+              </div>
+              <div className="space-y-2">
+                {medications.map((med) => (
+                  <div key={med.id} className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2">
+                    <div className="text-sm">
+                      <span className="font-medium">{med.name}</span>
+                      {med.dosage && <span className="text-muted-foreground ml-1 text-xs">({med.dosage})</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`med-${med.id}`} className="text-xs text-muted-foreground">
+                        {medicationsTaken[med.id] ? 'Tomei' : 'Não tomei'}
+                      </Label>
+                      <Switch
+                        id={`med-${med.id}`}
+                        checked={!!medicationsTaken[med.id]}
+                        onCheckedChange={() => handleToggleMed(med.id)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <Textarea
               placeholder="O que está influenciando sua energia agora? (opcional)"

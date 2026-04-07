@@ -5,11 +5,20 @@ import { useFirestore, useUser, useMemoFirebase, useDoc } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import type { MentorDoProfile, Medication } from '@/lib/types';
 
-/** Remove campos undefined e o campo 'id' antes de salvar no Firestore */
+/** Remove campos undefined e o campo 'id' em objetos rasos */
 function sanitize<T extends object>(obj: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([k, v]) => k !== 'id' && v !== undefined)
   ) as Partial<T>;
+}
+
+/** Sanitiza um medicamento removendo campos opcionais undefined */
+function sanitizeMedication(med: Medication): Record<string, unknown> {
+  const result: Record<string, unknown> = { id: med.id, name: med.name, frequency: med.frequency };
+  if (med.dosage) result.dosage = med.dosage;
+  if (med.frequencyNote) result.frequencyNote = med.frequencyNote;
+  if (med.notes) result.notes = med.notes;
+  return result;
 }
 
 /**
@@ -52,7 +61,8 @@ export function useAboutMe() {
         id: `med_${Date.now()}`,
       };
       const existing = profile?.medications ?? [];
-      await updateProfile({ medications: [...existing, newMed] });
+      const sanitized = [...existing, newMed].map(sanitizeMedication);
+      await updateProfile({ medications: sanitized as unknown as Medication[] });
     },
     [profile, updateProfile]
   );
@@ -60,7 +70,10 @@ export function useAboutMe() {
   const removeMedication = useCallback(
     async (medId: string) => {
       const existing = profile?.medications ?? [];
-      await updateProfile({ medications: existing.filter((m) => m.id !== medId) });
+      const sanitized = existing
+        .filter((m) => m.id !== medId)
+        .map(sanitizeMedication);
+      await updateProfile({ medications: sanitized as unknown as Medication[] });
     },
     [profile, updateProfile]
   );

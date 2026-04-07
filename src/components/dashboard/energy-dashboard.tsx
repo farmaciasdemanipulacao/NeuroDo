@@ -234,7 +234,7 @@ export function EnergyDashboard() {
           energyTrend: stats.energyTrend,
           streak: stats.streak,
         },
-        userName: appUser?.displayName?.split(' ')[0] ?? undefined,
+        userName: appUser?.displayName?.split(' ')[0] ?? 'você',
       });
 
       if (result.error) {
@@ -300,7 +300,7 @@ export function EnergyDashboard() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full overflow-hidden">
       {/* ── Seção 1: Cards de resumo ─────────────────────────────────────── */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {/* Energia Média */}

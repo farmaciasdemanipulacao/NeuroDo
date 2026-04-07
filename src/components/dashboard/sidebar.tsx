@@ -89,13 +89,17 @@ export function AppSidebar() {
   };
 
   const sidebarHeader = (
-    <div className="flex items-center p-3 pt-4">
-      <div className="flex items-center group-data-[collapsible=icon]:hidden">
-        <Logo variant="horizontal" size="xl" className="max-w-[18rem]" />
+    <div className="flex flex-col p-3 pt-4 pb-0">
+      <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+        <Logo variant="horizontal" size="lg" className="max-w-[16rem]" />
+        <p className="text-[10px] text-muted-foreground/50 tracking-widest uppercase pl-2 -mt-1 mb-3">
+          Acreditamos em Você!
+        </p>
       </div>
-      <div className="hidden items-center justify-center group-data-[collapsible=icon]:flex">
-        <Logo variant="icon" size="md" className="max-w-[4rem]" />
+      <div className="hidden items-center justify-center pb-3 group-data-[collapsible=icon]:flex">
+        <Logo variant="icon" size="sm" className="max-w-[4rem]" />
       </div>
+      <div className="h-px bg-border/40 -mx-3" />
     </div>
   );
 
@@ -195,6 +199,8 @@ export function AppSidebar() {
              </SidebarMenu>
         </SidebarContent>
 
+        <div className="h-px bg-border/40 mx-3" />
+
         <SidebarFooter>
             <SidebarMenu>
                 <SidebarMenuItem>
@@ -202,7 +208,7 @@ export function AppSidebar() {
                         <DropdownMenuTrigger asChild>
                             <SidebarMenuButton
                                 size="lg"
-                                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                                className="group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                             >
                                 <Avatar className="h-8 w-8 rounded-lg">
                                     <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
@@ -214,6 +220,7 @@ export function AppSidebar() {
                                     <span className="truncate font-semibold">{user?.displayName || 'Usuário'}</span>
                                     <span className="truncate text-xs">{user?.email}</span>
                                 </div>
+                                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/60 transition-transform duration-200 group-data-[state=open]:rotate-90" />
                             </SidebarMenuButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent

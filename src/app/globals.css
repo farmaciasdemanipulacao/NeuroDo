@@ -6,6 +6,7 @@
 
 @layer base {
   :root {
+    font-size: 80%; /* Escala global — equivalente ao zoom 80% do navegador */
     --background: 236 22% 10%; /* Deep, dark Blue-Gray */
     --foreground: 240 10% 90%;
     --card: 235 21% 14%;

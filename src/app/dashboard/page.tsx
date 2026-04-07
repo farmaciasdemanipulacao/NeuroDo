@@ -19,6 +19,11 @@ import { UpdateGoalDialog } from '@/components/dashboard/update-goal-dialog';
 import { XPWidget } from '@/components/dashboard/xp-widget';
 import { DailyPlanView } from '@/components/dashboard/daily-plan-view';
 import { Card } from '@/components/ui/card';
+import { ProjectStabilityWidget } from '@/components/dashboard/project-stability-widget';
+import { ExecutionSlotsWidget } from '@/components/dashboard/execution-slots-widget';
+import { OwnerRoleWidget } from '@/components/dashboard/owner-role-widget';
+import { ProjectRevenueWidget } from '@/components/dashboard/project-revenue-widget';
+import { FolderKanban } from 'lucide-react';
 
 export default function DashboardPage() {
   const [isSeeding, setIsSeeding] = useState(false);
@@ -106,6 +111,22 @@ export default function DashboardPage() {
         <div className="space-y-6">
            <DailyGoalWidget />
            <ProjectOverview />
+        </div>
+      </div>
+
+      {/* Seção Projetos */}
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center gap-2">
+          <FolderKanban className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Visão de Projetos</h2>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <ProjectStabilityWidget />
+          <ExecutionSlotsWidget />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <OwnerRoleWidget />
+          <ProjectRevenueWidget />
         </div>
       </div>
     </div>

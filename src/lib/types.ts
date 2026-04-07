@@ -421,6 +421,7 @@ export interface ManagedProject {
   iconColor: string; // hex color (ex: "#22C55E")
   changelog: ChangelogEntry[];
   deletionScheduledAt: string | null; // ISO — após 48h executa exclusão real
+  estimatedMonthlyRevenue?: number; // receita mensal estimada (R$)
   createdAt: string;
   updatedAt: string;
 }

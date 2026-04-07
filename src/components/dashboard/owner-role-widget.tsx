@@ -33,6 +33,7 @@ export function OwnerRoleWidget() {
     const data: { name: string; value: number; hours: number; color: string; emoji: string; count: number }[] = [];
     for (const [role, count] of Object.entries(counts) as [OwnerRole, number][]) {
       const cfg = ROLE_CONFIG[role];
+      if (!cfg) continue; // ignora papéis desconhecidos/undefined
       const hours = cfg.hours * count;
       total += hours;
       if (count > 0) {

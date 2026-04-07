@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { useUser } from '@/firebase/provider';
 import { EnergyCheckin } from '@/components/dashboard/energy-checkin';
 import { FloatingFocusTimer } from '@/components/dashboard/floating-focus-timer';
+import { DashboardDataProvider } from '@/context/dashboard-data-provider';
 
 export default function DashboardLayout({
   children,
@@ -40,7 +41,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <>
+    <DashboardDataProvider>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
@@ -59,6 +60,6 @@ export default function DashboardLayout({
         <AiMentorChat open={mentorOpen} onOpenChange={setMentorOpen} />
       </AiMentorErrorBoundary>
       <EnergyCheckin open={energyModalOpen} onOpenChange={setEnergyModalOpen} />
-    </>
+    </DashboardDataProvider>
   );
 }

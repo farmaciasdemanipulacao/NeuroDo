@@ -11,9 +11,9 @@ import { Calendar, Clock, PlusCircle, Sparkles, User, AlertTriangle, Loader2, Tr
 import { cn, formatValue } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useCollection, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { useFirestore, useMemoFirebase } from '@/firebase/provider';
-import { collection, query, doc, runTransaction, writeBatch, type DocumentData, type DocumentReference, type DocumentSnapshot } from 'firebase/firestore';
+import { useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { doc, runTransaction, writeBatch, type DocumentData, type DocumentReference, type DocumentSnapshot } from 'firebase/firestore';
 import { TaskForm } from './task-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
 import { HelpButton } from '../ui/help-button';
 import { helpContent } from '@/lib/help-content';
+import { useDashboardData } from '@/context/dashboard-data-provider';
 
 
 export function DailyPlanView() {
@@ -31,17 +32,7 @@ export function DailyPlanView() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const tasksQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'users', user.uid, 'tasks'));
-  }, [firestore, user]);
-  const { data: tasks, isLoading: areTasksLoading } = useCollection<Task>(tasksQuery);
-
-  const goalsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'users', user.uid, 'goals'));
-  }, [firestore, user]);
-  const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsQuery);
+  const { tasks, areTasksLoading, goals, areGoalsLoading } = useDashboardData();
   
   const isLoading = isUserLoading || areTasksLoading || areGoalsLoading;
 

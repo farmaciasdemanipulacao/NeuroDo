@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame } from 'lucide-react';
-import { useUserStats } from '@/hooks/use-user-stats';
+import { useSharedUserStats } from '@/context/dashboard-data-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function StreakCounter() {
-  const { data: stats, isLoading } = useUserStats();
+  const { data: stats, isLoading } = useSharedUserStats();
   const streak = stats?.currentStreak ?? 0;
 
   return (

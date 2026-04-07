@@ -24,11 +24,12 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser, useCollection, updateDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { collection, doc, query } from 'firebase/firestore';
+import { useFirestore, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Loader2, Target } from 'lucide-react';
 import type { Goal } from '@/lib/types';
 import { useState, useMemo, useEffect } from 'react';
+import { useSharedGoals } from '@/context/dashboard-data-provider';
 
 // Schema for the form
 const updateGoalSchema = z.object({
@@ -56,12 +57,9 @@ export function UpdateGoalDialog({ children }: UpdateGoalDialogProps) {
     }
   });
 
-  const goalsQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, 'users', user.uid, 'goals'));
-  }, [user, firestore]);
-
-  const { data: goals, isLoading } = useCollection<Goal>(goalsQuery);
+  const goalsResult = useSharedGoals();
+  const goals = goalsResult.data;
+  const isLoading = goalsResult.isLoading;
 
   const watchedGoalId = form.watch('goalId');
   const selectedGoal = useMemo(() => {

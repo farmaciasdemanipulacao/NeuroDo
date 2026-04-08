@@ -440,6 +440,16 @@ export function ProjectsView() {
 
   const allProjects = projects ?? [];
 
+  // Projetos ativos que não têm categoria válida (legado/seed antigo)
+  const VALID_CATEGORIES = new Set(['execution', 'oversight', 'personal']);
+  const orphanedProjects = allProjects.filter(
+    (p) => p.status === 'active' && !VALID_CATEGORIES.has(p.category)
+  );
+  const [orphanOpen, setOrphanOpen] = useState(false);
+
+  // Contagem real de ativos com categoria válida
+  const activeCount = executionProjects.length + oversightProjects.length + personalProjects.length;
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   function handleAdd(category: ProjectCategory) {
@@ -645,8 +655,13 @@ export function ProjectsView() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-muted-foreground">
-            {allProjects.filter((p) => p.status === 'active').length} ativos
+            {activeCount} ativos
           </Badge>
+          {orphanedProjects.length > 0 && (
+            <Badge variant="outline" className="text-amber-400 border-amber-400/30 bg-amber-400/10">
+              {orphanedProjects.length} sem categoria
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -671,6 +686,44 @@ export function ProjectsView() {
         onAdd={handleAdd}
         {...sectionProps}
       />
+
+      {/* Sem categoria (projetos legado/seed) */}
+      {orphanedProjects.length > 0 && (
+        <Collapsible open={orphanOpen} onOpenChange={setOrphanOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between text-amber-400 hover:text-amber-300">
+              <span className="text-sm font-medium">
+                ⚠️ Sem categoria ({orphanedProjects.length}) — clique para ver e editar
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${orphanOpen ? 'rotate-180' : ''}`}
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            <p className="text-xs text-muted-foreground px-1 pb-1">
+              Estes projetos existem no banco mas não têm categoria definida (provavelmente dados antigos). Edite cada um para atribuir uma categoria.
+            </p>
+            {orphanedProjects.map((project, idx) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                index={idx}
+                total={orphanedProjects.length}
+                isExecution={false}
+                allProjects={allProjects}
+                onEdit={handleEdit}
+                onPause={handlePause}
+                onResume={handleResume}
+                onScheduleDelete={handleScheduleDelete}
+                onCancelDelete={handleCancelDelete}
+                onMoveUp={() => {}}
+                onMoveDown={() => {}}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {/* Pausados */}
       {pausedProjects.length > 0 && (

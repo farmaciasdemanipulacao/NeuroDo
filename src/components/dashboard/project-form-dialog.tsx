@@ -74,6 +74,7 @@ const projectFormSchema = z.object({
   parentId: z.string().nullable(),
   icon: z.string().min(1),
   iconColor: z.string().min(1),
+  estimatedMonthlyRevenue: z.coerce.number().min(0).nullable(),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -182,6 +183,7 @@ export function ProjectFormDialog({
       parentId: project?.parentId ?? null,
       icon: project?.icon ?? 'Briefcase',
       iconColor: project?.iconColor ?? '#22C55E',
+      estimatedMonthlyRevenue: project?.estimatedMonthlyRevenue ?? null,
     },
   });
 
@@ -198,6 +200,7 @@ export function ProjectFormDialog({
         parentId: project?.parentId ?? null,
         icon: project?.icon ?? 'Briefcase',
         iconColor: project?.iconColor ?? '#22C55E',
+        estimatedMonthlyRevenue: project?.estimatedMonthlyRevenue ?? null,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,8 +208,10 @@ export function ProjectFormDialog({
 
   const { isSubmitting } = form.formState;
   const category = form.watch('category');
+  const valueType = form.watch('valueType');
   const selectedIcon = form.watch('icon');
   const selectedColor = form.watch('iconColor');
+  const showRevenue = valueType === 'financial' || valueType === 'amplifier';
 
   // Projetos disponíveis como parent (exclui si mesmo e sub-projetos)
   const parentOptions = allProjects.filter(
@@ -224,6 +229,7 @@ export function ProjectFormDialog({
       parentId: values.parentId || null,
       icon: values.icon,
       iconColor: values.iconColor,
+      estimatedMonthlyRevenue: values.estimatedMonthlyRevenue ?? undefined,
     });
     toast({
       title: isEdit ? 'Projeto atualizado' : 'Projeto criado!',
@@ -470,6 +476,28 @@ export function ProjectFormDialog({
                         placeholder="Quem operacionaliza este projeto?"
                         value={field.value ?? ''}
                         onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Receita mensal estimada (apenas para financeiro/amplificador) */}
+            {showRevenue && (
+              <FormField
+                control={form.control}
+                name="estimatedMonthlyRevenue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Receita mensal estimada (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 5000"
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />

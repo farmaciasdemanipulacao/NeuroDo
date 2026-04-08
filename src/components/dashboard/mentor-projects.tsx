@@ -27,6 +27,8 @@ import { useProjects } from '@/hooks/use-projects';
 import { mentorProjects } from '@/ai/flows/mentor-projects';
 import type { MentorProjectsInput, MentorProjectsOutput } from '@/ai/flows/mentor-projects';
 
+const VALID_CATEGORIES = new Set(['execution', 'oversight', 'personal']);
+
 // Cálculo de estabilidade dos projetos (mesma lógica do widget)
 function calcStability(projects: ReturnType<typeof useProjects>['projects']): number {
   if (!projects?.length) return 100;
@@ -72,7 +74,10 @@ export function MentorProjects() {
 
   const projectsPayload = useMemo((): MentorProjectsInput['projects'] => {
     return (projects ?? [])
-      .filter((p) => p.status === 'active' || p.status === 'paused')
+      .filter((p) =>
+        (p.status === 'active' || p.status === 'paused') &&
+        VALID_CATEGORIES.has(p.category)
+      )
       .map((p) => ({
         name: p.name,
         category: p.category as 'execution' | 'oversight' | 'personal',
@@ -89,20 +94,20 @@ export function MentorProjects() {
     setState({ loading: true, result: null, error: null });
     setActiveMode(mode);
 
-    try {
-      const result = await mentorProjects({
-        mode,
-        projects: projectsPayload,
-        currentHour: new Date().getHours(),
-        stabilityPercent,
-        executionCount: executionProjects?.length ?? 0,
-        totalEstimatedRevenue,
-        celebrationContext,
-      });
-      setState({ loading: false, result, error: null });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro desconhecido.';
-      setState({ loading: false, result: null, error: msg });
+    const res = await mentorProjects({
+      mode,
+      projects: projectsPayload,
+      currentHour: new Date().getHours(),
+      stabilityPercent,
+      executionCount: executionProjects?.length ?? 0,
+      totalEstimatedRevenue,
+      celebrationContext,
+    });
+
+    if (res.ok) {
+      setState({ loading: false, result: res.data, error: null });
+    } else {
+      setState({ loading: false, result: null, error: res.error });
     }
   }
 

@@ -72,6 +72,11 @@ const MentorProjectsOutputSchema = z.object({
 
 export type MentorProjectsOutput = z.infer<typeof MentorProjectsOutputSchema>;
 
+// Resultado discriminado — o Server Action NUNCA lança, sempre retorna ok/error
+export type MentorProjectsResult =
+  | { ok: true; data: MentorProjectsOutput }
+  | { ok: false; error: string };
+
 // --- Helpers de prompt ---
 
 function buildProjectsList(projects: MentorProjectsInput['projects']): string {
@@ -169,20 +174,20 @@ Responda SOMENTE com um objeto JSON válido e nada mais.`;
 
 export async function mentorProjects(
   input: MentorProjectsInput
-): Promise<MentorProjectsOutput> {
-  if (!openai || initError) {
-    throw new Error(`Erro de configuração do servidor: ${initError}`);
-  }
-
-  const validated = MentorProjectsInputSchema.safeParse(input);
-  if (!validated.success) {
-    throw new Error(`Dados inválidos: ${validated.error.message}`);
-  }
-
-  const systemPrompt = buildSystemPrompt(validated.data.mode);
-  const userPrompt = buildUserPrompt(validated.data);
-
+): Promise<MentorProjectsResult> {
   try {
+    if (!openai || initError) {
+      return { ok: false, error: `Configuração inválida: ${initError ?? 'OpenAI não inicializado.'}` };
+    }
+
+    const validated = MentorProjectsInputSchema.safeParse(input);
+    if (!validated.success) {
+      return { ok: false, error: `Dados inválidos: ${validated.error.message}` };
+    }
+
+    const systemPrompt = buildSystemPrompt(validated.data.mode);
+    const userPrompt = buildUserPrompt(validated.data);
+
     const response = await openai.chat.completions.create({
       model,
       messages: [
@@ -195,25 +200,31 @@ export async function mentorProjects(
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
-      throw new Error('A API da OpenAI não retornou conteúdo.');
+      return { ok: false, error: 'A API não retornou conteúdo. Tente novamente.' };
     }
 
     const parsed = JSON.parse(rawOutput);
-    const validated = MentorProjectsOutputSchema.safeParse(parsed);
+    const outputValidated = MentorProjectsOutputSchema.safeParse(parsed);
 
-    if (!validated.success) {
-      // Fallback seguro
+    if (!outputValidated.success) {
+      // Fallback seguro — usa o texto bruto como mensagem
       return {
-        message: rawOutput,
-        suggestedAction: undefined,
-        suggestedProjectFocus: undefined,
-        motivationalQuote: undefined,
+        ok: true,
+        data: {
+          message: rawOutput,
+          suggestedAction: undefined,
+          suggestedProjectFocus: undefined,
+          motivationalQuote: undefined,
+        },
       };
     }
 
-    return validated.data;
+    return { ok: true, data: outputValidated.data };
   } catch (err) {
-    console.error('[MentorDo] Erro ao chamar OpenAI:', err);
-    throw new Error('O MentorDo está temporariamente indisponível. Tente novamente em instantes.');
+    console.error('[MentorDo] Erro:', err);
+    return {
+      ok: false,
+      error: 'O MentorDo está temporariamente indisponível. Tente novamente em instantes.',
+    };
   }
 }

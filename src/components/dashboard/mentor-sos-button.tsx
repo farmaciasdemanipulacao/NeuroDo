@@ -14,6 +14,8 @@ import { useProjects } from '@/hooks/use-projects';
 import { mentorProjects } from '@/ai/flows/mentor-projects';
 import type { MentorProjectsOutput } from '@/ai/flows/mentor-projects';
 
+const VALID_CATEGORIES = new Set(['execution', 'oversight', 'personal']);
+
 const INACTIVITY_THRESHOLD_MINUTES = 120;
 
 function calcStability(projects: ReturnType<typeof useProjects>['projects']): number {
@@ -84,7 +86,10 @@ export function MentorSosButton() {
       const res = await mentorProjects({
         mode: 'lost',
         projects: (projects ?? [])
-          .filter((p) => p.status === 'active' || p.status === 'paused')
+          .filter((p) =>
+            (p.status === 'active' || p.status === 'paused') &&
+            VALID_CATEGORIES.has(p.category)
+          )
           .map((p) => ({
             name: p.name,
             category: p.category as 'execution' | 'oversight' | 'personal',
@@ -101,9 +106,15 @@ export function MentorSosButton() {
         totalEstimatedRevenue,
         inactiveMinutes: inactiveMinutes > 0 ? inactiveMinutes : undefined,
       });
-      setResult(res);
+
+      if (res.ok) {
+        setResult(res.data);
+      } else {
+        setError(res.error);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao contatar o MentorDo.');
+      // Fallback para erros de rede ou outros problemas inesperados
+      setError('Erro de conexão. Verifique sua internet e tente novamente.');
     } finally {
       setLoading(false);
     }

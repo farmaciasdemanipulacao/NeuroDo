@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { useUser } from '@/firebase/provider';
 import { EnergyCheckin } from '@/components/dashboard/energy-checkin';
 import { FloatingFocusTimer } from '@/components/dashboard/floating-focus-timer';
+import { MentorSosButton } from '@/components/dashboard/mentor-sos-button';
 import { DashboardDataProvider } from '@/context/dashboard-data-provider';
 
 export default function DashboardLayout({
@@ -56,6 +57,7 @@ export default function DashboardLayout({
       </SidebarProvider>
 
       <FloatingFocusTimer />
+      <MentorSosButton />
       <AiMentorErrorBoundary>
         <AiMentorChat open={mentorOpen} onOpenChange={setMentorOpen} />
       </AiMentorErrorBoundary>

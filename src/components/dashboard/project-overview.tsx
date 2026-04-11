@@ -49,6 +49,14 @@ export function ProjectOverview() {
 
   const otherProjects = projects.filter(p => p.id !== featuredProject.id);
 
+  // Escolhe número de colunas para que a última linha não fique vazia
+  const count = otherProjects.length;
+  const lgGridClass =
+    count % 4 === 0 ? 'lg:grid-cols-4' :
+    count % 3 === 0 ? 'lg:grid-cols-3' :
+    count % 2 === 0 ? 'lg:grid-cols-4' :
+    'lg:grid-cols-4';
+
   return (
     <div className="grid gap-6">
       <Card className="flex flex-col col-span-1 md:col-span-2 lg:col-span-3">
@@ -90,7 +98,7 @@ export function ProjectOverview() {
         </CardFooter>
       </Card>
 
-      <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={cn('col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4', lgGridClass)}>
         {otherProjects.map(project => (
           <Card
             key={project.id}

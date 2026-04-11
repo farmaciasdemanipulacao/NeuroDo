@@ -1,4 +1,6 @@
 import { MetricsChart } from '@/components/dashboard/metrics-chart';
+import { MetricsKpiCards } from '@/components/dashboard/metrics-kpi-cards';
+import { MetricsGoalsProgress } from '@/components/dashboard/metrics-goals-progress';
 import { HelpButton } from '@/components/ui/help-button';
 import { helpContent } from '@/lib/help-content';
 
@@ -10,7 +12,9 @@ export default function MetricsPage() {
         <HelpButton title="Como usar Métricas & Conquistas" content={helpContent.metrics} />
       </div>
       <p className="text-muted-foreground">Acompanhe seu progresso e celebre sua competência.</p>
+      <MetricsKpiCards />
       <MetricsChart />
+      <MetricsGoalsProgress />
     </div>
   );
 }

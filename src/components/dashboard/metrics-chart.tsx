@@ -7,10 +7,7 @@ import { ChartTooltip, ChartTooltipContent, ChartContainer } from '@/components/
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Trophy } from 'lucide-react';
-import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { useUserStats } from '@/hooks/use-user-stats';
-import { collection, query } from 'firebase/firestore';
-import type { Task } from '@/lib/types';
+import { useSharedTasks, useSharedUserStats } from '@/context/dashboard-data-provider';
 import { subDays, format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -37,17 +34,8 @@ const ACHIEVEMENT_LABELS: Record<string, { title: string; description: string }>
 };
 
 export function MetricsChart() {
-  const { user } = useUser();
-  const firestore = useFirestore();
-  const { data: stats, isLoading: areStatsLoading } = useUserStats();
-
-  // Busca todas as tarefas para calcular o gráfico dos últimos 7 dias
-  const tasksQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, 'users', user.uid, 'tasks'));
-  }, [user, firestore]);
-
-  const { data: tasks, isLoading: areTasksLoading } = useCollection<Task>(tasksQuery);
+  const { data: stats, isLoading: areStatsLoading } = useSharedUserStats();
+  const { data: tasks, isLoading: areTasksLoading } = useSharedTasks();
 
   // Agrupa tarefas concluídas por dia nos últimos 7 dias
   const chartData = useMemo(() => {

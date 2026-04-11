@@ -1,7 +1,55 @@
 'use client';
 
-import React, { createContext, useState, useMemo, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { usePreferences } from '@/hooks/use-preferences';
+
+// --- Timer Persistence (localStorage) ---
+
+const TIMER_STORAGE_KEY = 'neurodo_timer_state';
+
+interface PersistedTimerState {
+  isActive: boolean;
+  startedAt: number | null; // timestamp (ms) em que o timer foi ligado a última vez
+  secondsLeftAtStart: number; // segundos restantes quando startedAt foi salvo
+  timerMode: TimerMode;
+  workMode: WorkMode;
+  cycles: number;
+  duration: number;
+  hasTimerBeenStarted: boolean;
+}
+
+function loadPersistedTimer(): PersistedTimerState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+    if (!raw) return null;
+    const s: PersistedTimerState = JSON.parse(raw);
+    // Calcula tempo decorrido desde a última vez que estava ativo
+    if (s.isActive && s.startedAt) {
+      const elapsed = Math.floor((Date.now() - s.startedAt) / 1000);
+      s.secondsLeftAtStart = Math.max(0, s.secondsLeftAtStart - elapsed);
+      // Se o tempo chegou a 0 enquanto a página estava fechada, pausa no 0
+      if (s.secondsLeftAtStart === 0) {
+        s.isActive = false;
+      }
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
+function saveTimerState(state: PersistedTimerState) {
+  try {
+    localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+function clearTimerState() {
+  try {
+    localStorage.removeItem(TIMER_STORAGE_KEY);
+  } catch {}
+}
 
 // Timer configuration
 const WORK_DURATIONS = {
@@ -71,14 +119,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updatePreferences({ energyLevel: level });
   }, [updatePreferences]);
 
-  // --- Timer State Management ---
-  const [hasTimerBeenStarted, setHasTimerBeenStarted] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const [timerMode, setTimerMode] = useState<TimerMode>('work');
-  const [workMode, setWorkMode] = useState<WorkMode>('pomodoro');
-  const [cycles, setCycles] = useState(0);
-  const [duration, setDuration] = useState(WORK_DURATIONS[workMode] * 60);
-  const [secondsLeft, setSecondsLeft] = useState(duration);
+  // --- Timer State — inicializado do localStorage ---
+  const [persisted] = useState(() => loadPersistedTimer());
+
+  const [hasTimerBeenStarted, setHasTimerBeenStarted] = useState(persisted?.hasTimerBeenStarted ?? false);
+  const [isActive, setIsActive] = useState(persisted?.isActive ?? false);
+  const [timerMode, setTimerMode] = useState<TimerMode>(persisted?.timerMode ?? 'work');
+  const [workMode, setWorkMode] = useState<WorkMode>(persisted?.workMode ?? 'pomodoro');
+  const [cycles, setCycles] = useState(persisted?.cycles ?? 0);
+  const [duration, setDuration] = useState(persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60);
+  const [secondsLeft, setSecondsLeft] = useState(
+    persisted?.secondsLeftAtStart ?? persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60
+  );
+
+  // Ref para acessar secondsLeft atual nas saves sem closure stale
+  const secondsLeftRef = useRef(secondsLeft);
+  useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
+
+  // --- Persiste no localStorage quando estado relevante muda (NÃO a cada tick) ---
+  useEffect(() => {
+    if (!hasTimerBeenStarted) return;
+    saveTimerState({
+      isActive,
+      startedAt: isActive ? Date.now() : null,
+      secondsLeftAtStart: secondsLeftRef.current,
+      timerMode,
+      workMode,
+      cycles,
+      duration,
+      hasTimerBeenStarted,
+    });
+  // secondsLeft/secondsLeftRef excluídos propositalmente — não queremos salvar a cada segundo
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, timerMode, workMode, cycles, duration, hasTimerBeenStarted]);
   
   // --- Timer Controls ---
 
@@ -95,6 +168,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newDuration = WORK_DURATIONS[targetWorkMode] * 60;
     setDuration(newDuration);
     setSecondsLeft(newDuration);
+    secondsLeftRef.current = newDuration;
+    clearTimerState();
   }, [energyLevel, hasTimerBeenStarted]);
 
   const toggleTimer = useCallback(() => {

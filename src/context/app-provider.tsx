@@ -170,7 +170,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       hasTimerBeenStarted,
       isFinished,
       sessionStartedAt,
-      linkedTask,
     });
   // secondsLeft/secondsLeftRef excluídos propositalmente — não queremos salvar a cada segundo
   // eslint-disable-next-line react-hooks/exhaustive-deps

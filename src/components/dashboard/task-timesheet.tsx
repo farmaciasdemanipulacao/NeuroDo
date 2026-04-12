@@ -40,7 +40,7 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
     setIsRunning(false);
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
-    if (!user || !startTime) return;
+    if (!user || !startTime || !firestore) return;
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
     const entry: TimesheetEntry = {
@@ -54,8 +54,12 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
       duration,
       createdAt: new Date().toISOString(),
     };
-    const ref = collection(firestore, "users", user.uid, "timesheets");
-    addDocumentNonBlocking(ref, entry);
+    try {
+      const ref = collection(firestore, "users", user.uid, "timesheets");
+      await addDocumentNonBlocking(ref, entry);
+    } catch (err) {
+      console.error('Falha ao salvar timesheet:', err);
+    }
     setElapsed(0);
     setStartTime(null);
   };

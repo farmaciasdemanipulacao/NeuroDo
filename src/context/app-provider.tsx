@@ -109,7 +109,6 @@ type AppContextType = {
   toggleTimer: () => void;
   resetTimer: (newWorkMode?: WorkMode) => void;
   skipToNextMode: () => void;
-  setLinkedTask: (task: LinkedTaskSnapshot | null) => void;
 };
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -147,7 +146,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60);
   const [isFinished, setIsFinished] = useState(persisted?.isFinished ?? false);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(persisted?.sessionStartedAt ?? null);
-  // const [linkedTask, setLinkedTask] = useState<LinkedTaskSnapshot | null>(persisted?.linkedTask ?? null);
   const [secondsLeft, setSecondsLeft] = useState(
     persisted?.secondsLeftAtStart ?? persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60
   );
@@ -216,11 +214,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const sessionsRef = collection(firestore, 'users', user.uid, 'focus_sessions');
     addDocumentNonBlocking(sessionsRef, {
       userId: user.uid,
-      // taskId: linkedTask?.id,
-      // taskTitle: linkedTask?.title,
-      // projectId: linkedTask?.projectId,
-      // goalId: linkedTask?.goalId,
-      // milestoneId: linkedTask?.milestoneId,
       workMode,
       durationMinutes: Math.round(duration / 60),
       actualMinutes,
@@ -337,7 +330,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleTimer,
       resetTimer,
       skipToNextMode,
-      setLinkedTask,
     }),
     [
       energyLevel,
@@ -349,7 +341,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isActive,
       cycles,
       isFinished,
-      linkedTask,
       toggleTimer,
       resetTimer,
       skipToNextMode,

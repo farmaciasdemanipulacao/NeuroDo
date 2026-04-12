@@ -49,7 +49,7 @@ async function chatWithMentorWithRetry(
     .filter(m => m.role !== 'error')
     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-  const result = await chatWithMentor({ message, history: historyForApi, profileContext: fullProfileContext });
+  const result = await chatWithMentor({ message, history: historyForApi, profileContext });
 
   // Novo padrão: chatWithMentor retorna objeto com error em vez de throw
   if (result.error) {
@@ -65,7 +65,7 @@ async function chatWithMentorWithRetry(
     throw new Error(result.error);
   }
 
-  return result.response;
+  return result.response ?? '';
 }
 
 interface AiMentorChatProps {
@@ -100,6 +100,11 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
 
   // Timesheet: produtividade do usuário
   const { data: timesheets } = useTimesheets();
+
+  // Exemplo de uso: gerar contexto de produtividade
+  const productivityContext = timesheets && timesheets.length > 0
+    ? `O usuário registrou ${timesheets.length} sessões de trabalho em tarefas, totalizando ${(timesheets.reduce((sum, t) => sum + (t.duration || 0), 0) / 3600).toFixed(1)} horas nas últimas semanas. Tarefas mais trabalhadas: ${[...new Set(timesheets.map(t => t.taskTitle))].slice(0,3).join(', ')}.`
+    : '';
 
   const profileContext = (() => {
     const base = mentorProfile

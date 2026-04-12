@@ -49,13 +49,10 @@ export function ProjectOverview() {
 
   const otherProjects = projects.filter(p => p.id !== featuredProject.id);
 
-  // Escolhe número de colunas para que a última linha não fique vazia
+  // Evita classes dinâmicas do Tailwind (que podem ser removidas no build)
+  // e ajusta as colunas para reduzir espaços vazios na última linha.
   const count = otherProjects.length;
-  const lgGridClass =
-    count % 4 === 0 ? 'lg:grid-cols-4' :
-    count % 3 === 0 ? 'lg:grid-cols-3' :
-    count % 2 === 0 ? 'lg:grid-cols-4' :
-    'lg:grid-cols-4';
+  const lgColumns = count % 4 === 0 ? 4 : count % 3 === 0 ? 3 : 4;
 
   return (
     <div className="grid gap-6">
@@ -98,25 +95,34 @@ export function ProjectOverview() {
         </CardFooter>
       </Card>
 
-      <div className={cn('col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4', lgGridClass)}>
-        {otherProjects.map(project => (
-          <Card
-            key={project.id}
-            className="hover:bg-muted/50 cursor-pointer transition-colors flex flex-col justify-between"
-            onClick={() => setFeaturedProject(project)}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-base font-semibold">{project.name}</CardTitle>
-                <Rocket className={cn('h-5 w-5', `text-${project.tailwindColor}`)} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs text-muted-foreground">{project.progress}% completo</div>
-              <Progress value={project.progress} className="h-1 mt-1" />
-            </CardContent>
-          </Card>
-        ))}
+      <div
+        className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-2 gap-4"
+        style={{ gridTemplateColumns: `repeat(${lgColumns}, minmax(0, 1fr))` }}
+      >
+        {otherProjects.map((project, index) => {
+          const isLastOdd = count % lgColumns === 1 && index === otherProjects.length - 1;
+          return (
+            <Card
+              key={project.id}
+              className={cn(
+                'hover:bg-muted/50 cursor-pointer transition-colors flex flex-col justify-between',
+                isLastOdd ? 'md:col-span-2 lg:col-span-2' : ''
+              )}
+              onClick={() => setFeaturedProject(project)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-base font-semibold">{project.name}</CardTitle>
+                  <Rocket className={cn('h-5 w-5', `text-${project.tailwindColor}`)} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-muted-foreground">{project.progress}% completo</div>
+                <Progress value={project.progress} className="h-1 mt-1" />
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

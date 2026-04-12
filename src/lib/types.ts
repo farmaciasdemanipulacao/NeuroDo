@@ -389,6 +389,24 @@ export interface EnergyCheckinRecord {
   createdAt: string; // ISO string
 }
 
+export interface FocusSession {
+  id: string;
+  userId: string;
+  taskId?: string;
+  taskTitle?: string;
+  projectId?: string;
+  goalId?: string;
+  milestoneId?: string;
+  workMode: 'sprint' | 'pomodoro' | 'deep';
+  durationMinutes: number;
+  actualMinutes: number;
+  startedAt: string; // ISO string
+  completedAt: string; // ISO string
+  completed: boolean;
+  energyLevel?: number | null;
+  createdAt: string; // ISO string
+}
+
 // ── Projetos Gerenciados ────────────────────────────────────────────────────
 
 export type ProjectCategory = 'execution' | 'oversight' | 'personal';

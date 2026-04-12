@@ -110,9 +110,10 @@ export default function DashboardPage() {
         {/* Coluna Direita */}
         <div className="space-y-6">
            <DailyGoalWidget />
-           <ProjectOverview />
         </div>
       </div>
+
+      <ProjectOverview />
 
       {/* Seção Projetos */}
       <div className="space-y-4 pt-2">

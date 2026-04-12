@@ -1,4 +1,5 @@
 import { FocusTimer } from '@/components/dashboard/focus-timer';
+import { FocusSessionHistory } from '@/components/dashboard/focus-session-history';
 import { HelpButton } from '@/components/ui/help-button';
 import { helpContent } from '@/lib/help-content';
 
@@ -14,6 +15,7 @@ export default function FocusPage() {
       <div className="flex justify-center">
         <FocusTimer />
       </div>
+      <FocusSessionHistory />
     </div>
   );
 }

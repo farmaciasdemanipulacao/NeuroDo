@@ -4,17 +4,18 @@ import { useApp } from "@/hooks/use-app";
 import { workModeLabels } from "@/context/app-provider";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { Play, Pause, RotateCcw, BrainCircuit, Link as LinkIcon } from 'lucide-react';
+import { Play, Pause, RotateCcw, Link as LinkIcon, BellRing } from 'lucide-react';
 import Link from "next/link";
+import { cn } from '@/lib/utils';
 
 // New component for the controls inside the popover
 function MiniTimerControls() {
     const { 
-        timerMode,
         workMode,
         secondsLeft,
         duration,
         isActive,
+                isFinished,
         toggleTimer,
         resetTimer,
       } = useApp();
@@ -27,8 +28,14 @@ function MiniTimerControls() {
     return (
         <div className="p-4 flex flex-col items-center gap-4 w-64">
             <p className="text-sm text-muted-foreground">
-                {timerMode === 'work' ? `Foco: ${currentWorkModeLabel}` : 'Pausa'}
+                Foco: {currentWorkModeLabel}
             </p>
+            {isFinished && (
+                <p className="text-xs text-green-300 flex items-center gap-1">
+                    <BellRing className="h-3.5 w-3.5" />
+                    Sessão concluída
+                </p>
+            )}
             <div className="relative h-40 w-40">
                 <svg className="h-full w-full" viewBox="0 0 100 100">
                     <circle className="stroke-current text-muted" strokeWidth="5" cx="50" cy="50" r="45" fill="transparent" />
@@ -58,7 +65,7 @@ function MiniTimerControls() {
 
 
 export function FloatingFocusTimer() {
-    const { secondsLeft, duration, hasTimerBeenStarted } = useApp();
+    const { secondsLeft, duration, hasTimerBeenStarted, isFinished } = useApp();
 
     if (!hasTimerBeenStarted) {
         return null;
@@ -72,7 +79,10 @@ export function FloatingFocusTimer() {
         <div className="fixed bottom-24 right-6 z-40">
             <Popover>
                 <PopoverTrigger asChild>
-                     <button className="relative h-16 w-16 group block rounded-full shadow-lg border-2 border-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                            <button className={cn(
+                                'relative h-16 w-16 group block rounded-full shadow-lg border-2 border-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                                isFinished ? 'animate-pulse ring-2 ring-green-400/70 border-green-500/80' : ''
+                            )}>
                         <svg className="h-full w-full" viewBox="0 0 100 100">
                             <circle
                                 className="stroke-current text-muted/30"

@@ -9,6 +9,7 @@ import { collection, doc, increment } from 'firebase/firestore';
 
 const TIMER_STORAGE_KEY = 'neurodo_timer_state';
 
+
 interface PersistedTimerState {
   isActive: boolean;
   startedAt: number | null; // timestamp (ms) em que o timer foi ligado a última vez
@@ -20,16 +21,9 @@ interface PersistedTimerState {
   hasTimerBeenStarted: boolean;
   isFinished: boolean;
   sessionStartedAt: string | null;
-  // linkedTask: LinkedTaskSnapshot | null;
 }
 
-type LinkedTaskSnapshot = {
-  id: string;
-  title: string;
-  projectId?: string;
-  goalId?: string;
-  milestoneId?: string;
-};
+
 
 function loadPersistedTimer(): PersistedTimerState | null {
   if (typeof window === 'undefined') return null;
@@ -231,7 +225,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updatedAt: nowIso,
       });
     }
-  }, [user, firestore, sessionStartedAt, duration, linkedTask, workMode, energyLevel]);
+  }, [user, firestore, sessionStartedAt, duration, workMode, energyLevel]);
   
   // --- Timer Controls ---
 
@@ -344,7 +338,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleTimer,
       resetTimer,
       skipToNextMode,
-      setLinkedTask,
     ]
   );
 

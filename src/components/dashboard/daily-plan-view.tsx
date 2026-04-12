@@ -370,6 +370,9 @@ export function DailyPlanView() {
                                                       </div>
                                                   </div>
                                                   <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div onClick={(e) => e.stopPropagation()} className="mr-2">
+                                                      <TaskTimesheet task={task} />
+                                                    </div>
                                                     {!task.specificTime && !task.completed && (
                                                       <>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isFirstInGroup} onClick={(e) => { e.stopPropagation(); handleReorder(task, 'up'); }}>

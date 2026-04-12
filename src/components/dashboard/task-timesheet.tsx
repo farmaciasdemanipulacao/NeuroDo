@@ -18,6 +18,7 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState<number>(0); // em segundos
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [comment, setComment] = useState<string>('');
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -49,10 +50,12 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
       projectId: task.projectId,
       goalId: task.linkedGoalId,
       milestoneId: task.linkedMilestoneId,
+      userId: user.uid,
       startedAt: startTime.toISOString(),
       endedAt: endTime.toISOString(),
       duration,
       createdAt: new Date().toISOString(),
+      comment: comment || undefined,
     };
     try {
       const ref = collection(firestore, "users", user.uid, "timesheets");
@@ -62,6 +65,7 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
     }
     setElapsed(0);
     setStartTime(null);
+    setComment('');
   };
 
   return (
@@ -81,6 +85,14 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
       <span className="text-xs text-muted-foreground ml-2">
         {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} min
       </span>
+      <input
+        aria-label="Observação"
+        placeholder="Adicionar observação (opcional)"
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        className="ml-3 p-1 text-xs border rounded w-48"
+      />
     </div>
   );
 }

@@ -161,6 +161,38 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 ))}
 
+                {/* ── Relatórios ── */}
+                <SidebarMenuItem>
+                  <Collapsible defaultOpen={false} className="group/collapsible w-full">
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton tooltip="Relatórios" className="w-full">
+                        <TrendingUp />
+                        <span>Relatórios</span>
+                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {reportNavItems.map(({ href, icon: Icon, label, question }) => (
+                          <SidebarMenuSubItem key={href}>
+                            <SidebarMenuSubButton asChild isActive={pathname === href || pathname.startsWith(href)}>
+                              <Link href={href} onClick={handleLinkClick}>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <Icon />
+                                    <span>{label}</span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">{question}</span>
+                                </div>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+
                 {/* ── Receitas com submenu expansível ── */}
                 <SidebarMenuItem>
                     <Collapsible defaultOpen={isRevenueActive} className="group/collapsible w-full">

@@ -4,11 +4,8 @@ import { useApp } from '@/hooks/use-app';
 import { workModeLabels } from '@/context/app-provider';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, SkipForward, Zap, Link2, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Zap, CheckCircle2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSharedTasks } from '@/context/dashboard-data-provider';
-import { useMemo } from 'react';
 
 
 export function FocusTimer() {

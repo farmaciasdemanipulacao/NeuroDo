@@ -407,6 +407,22 @@ export interface FocusSession {
   createdAt: string; // ISO string
 }
 
+// Registro de timesheet individual por tarefa
+export interface TimesheetEntry {
+  id?: string;
+  userId?: string;
+  taskId: string;
+  taskTitle: string;
+  projectId?: string;
+  goalId?: string;
+  milestoneId?: string;
+  startedAt: string; // ISO
+  endedAt: string; // ISO
+  duration: number; // segundos
+  createdAt: string; // ISO
+  comment?: string;
+}
+
 // ── Projetos Gerenciados ────────────────────────────────────────────────────
 
 export type ProjectCategory = 'execution' | 'oversight' | 'personal';

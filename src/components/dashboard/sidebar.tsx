@@ -72,6 +72,39 @@ const revenueSubItems = [
   { href: '/dashboard/revenue/pj', icon: Building2, label: 'Receitas PJ' },
 ];
 
+const reportNavItems = [
+  {
+    href: '/dashboard/reports/energy',
+    icon: Zap,
+    label: 'Energia',
+    question: 'Como está seu nível de energia ao longo dos dias?',
+  },
+  {
+    href: '/dashboard/reports/productivity',
+    icon: TrendingUp,
+    label: 'Produtividade',
+    question: 'Quanto tempo você investiu em cada tarefa, meta e projeto?',
+  },
+  {
+    href: '/dashboard/focus',
+    icon: Timer,
+    label: 'Foco',
+    question: 'Quantos ciclos de foco você completou?',
+  },
+  {
+    href: '/dashboard/metrics',
+    icon: BarChart3,
+    label: 'Métricas',
+    question: 'Como está o progresso geral dos seus projetos e metas?',
+  },
+  {
+    href: '/dashboard/gamification',
+    icon: Sparkles,
+    label: 'Gamificação',
+    question: 'Quais conquistas, níveis e streaks você já desbloqueou?',
+  },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();

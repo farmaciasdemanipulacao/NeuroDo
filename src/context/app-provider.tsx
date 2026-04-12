@@ -20,7 +20,7 @@ interface PersistedTimerState {
   hasTimerBeenStarted: boolean;
   isFinished: boolean;
   sessionStartedAt: string | null;
-  linkedTask: LinkedTaskSnapshot | null;
+  // linkedTask: LinkedTaskSnapshot | null;
 }
 
 type LinkedTaskSnapshot = {
@@ -103,7 +103,7 @@ type AppContextType = {
   isActive: boolean;
   cycles: number;
   isFinished: boolean;
-  linkedTask: LinkedTaskSnapshot | null;
+  // linkedTask: LinkedTaskSnapshot | null;
   
   // Timer Controls
   toggleTimer: () => void;
@@ -147,7 +147,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60);
   const [isFinished, setIsFinished] = useState(persisted?.isFinished ?? false);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(persisted?.sessionStartedAt ?? null);
-  const [linkedTask, setLinkedTask] = useState<LinkedTaskSnapshot | null>(persisted?.linkedTask ?? null);
+  // const [linkedTask, setLinkedTask] = useState<LinkedTaskSnapshot | null>(persisted?.linkedTask ?? null);
   const [secondsLeft, setSecondsLeft] = useState(
     persisted?.secondsLeftAtStart ?? persisted?.duration ?? WORK_DURATIONS['pomodoro'] * 60
   );
@@ -174,7 +174,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   // secondsLeft/secondsLeftRef excluídos propositalmente — não queremos salvar a cada segundo
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, timerMode, workMode, cycles, duration, hasTimerBeenStarted, isFinished, sessionStartedAt, linkedTask]);
+  }, [isActive, timerMode, workMode, cycles, duration, hasTimerBeenStarted, isFinished, sessionStartedAt]);
 
   const playCompletionSound = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -217,11 +217,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const sessionsRef = collection(firestore, 'users', user.uid, 'focus_sessions');
     addDocumentNonBlocking(sessionsRef, {
       userId: user.uid,
-      taskId: linkedTask?.id,
-      taskTitle: linkedTask?.title,
-      projectId: linkedTask?.projectId,
-      goalId: linkedTask?.goalId,
-      milestoneId: linkedTask?.milestoneId,
+      // taskId: linkedTask?.id,
+      // taskTitle: linkedTask?.title,
+      // projectId: linkedTask?.projectId,
+      // goalId: linkedTask?.goalId,
+      // milestoneId: linkedTask?.milestoneId,
       workMode,
       durationMinutes: Math.round(duration / 60),
       actualMinutes,
@@ -333,7 +333,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isActive,
       cycles,
       isFinished,
-      linkedTask,
+      // linkedTask,
       // Timer controls
       toggleTimer,
       resetTimer,

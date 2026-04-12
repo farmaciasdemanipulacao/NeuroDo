@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
 import { FirebaseContext, useDoc, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
+import { useTimesheets } from '@/hooks/use-timesheets';
 
 type Message = {
   role: 'user' | 'assistant' | 'error';
@@ -48,7 +49,7 @@ async function chatWithMentorWithRetry(
     .filter(m => m.role !== 'error')
     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-  const result = await chatWithMentor({ message, history: historyForApi, profileContext });
+  const result = await chatWithMentor({ message, history: historyForApi, profileContext: fullProfileContext });
 
   // Novo padrão: chatWithMentor retorna objeto com error em vez de throw
   if (result.error) {
@@ -97,6 +98,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   }, [user, firestore]);
   const { data: milestones } = useCollection<any>(milestonesQuery);
 
+  // Timesheet: produtividade do usuário
+  const { data: timesheets } = useTimesheets();
+
   const profileContext = (() => {
     const base = mentorProfile
       ? `Perfil MentorDo do usuário: neurodivergência=${mentorProfile.neurodivergence?.join(', ') || 'não informado'}; medicação=${mentorProfile.medication || 'não informado'}; diagnósticos=${mentorProfile.diagnoses || 'não informado'}; crenças limitantes=${mentorProfile.limitingBeliefs || 'não informado'}; desafios=${mentorProfile.challenges || 'não informado'}; preferências=${mentorProfile.preferences ? JSON.stringify(mentorProfile.preferences) : 'não informado'}; vícios=${mentorProfile.addictions?.map((a: any) => `${a.name}${a.willingToChange ? ' (quer mudar)' : ''}`).join(', ') || 'não informado'}.`
@@ -111,6 +115,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
 
     return base + roadmapContext;
   })();
+
+  // O contexto enviado ao MentorDo agora inclui produtividade (timesheet)
+  const fullProfileContext = [profileContext, productivityContext].filter(Boolean).join('\n\n');
 
   useEffect(() => {
     // Scroll to bottom quando mensagens mudam
@@ -138,7 +145,7 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
     console.log('[AI Mentor Chat] Enviando mensagem:', { length: userMessage.length });
 
     try {
-      const result = await chatWithMentorWithRetry(userMessage, messages, profileContext);
+      const result = await chatWithMentorWithRetry(userMessage, messages, fullProfileContext);
 
       if (!result || !result.trim()) {
         throw new Error('Resposta vazia do mentor');

@@ -22,6 +22,7 @@ import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
 import { HelpButton } from '../ui/help-button';
 import { helpContent } from '@/lib/help-content';
 import { useDashboardData } from '@/context/dashboard-data-provider';
+import { TaskTimesheet } from './task-timesheet';
 
 
 export function DailyPlanView() {

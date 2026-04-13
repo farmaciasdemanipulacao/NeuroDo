@@ -18,6 +18,11 @@ export function FloatingTaskTimer() {
     let interval: NodeJS.Timeout | null = null;
     const calcElapsed = () => {
       const start = new Date(activeTimer.startedAt).getTime();
+      if (activeTimer.isPaused && activeTimer.pausedAt) {
+        const paused = new Date(activeTimer.pausedAt).getTime();
+        setElapsed(Math.floor((paused - start) / 1000));
+        return;
+      }
       const now = Date.now();
       setElapsed(Math.floor((now - start) / 1000));
     };
@@ -35,7 +40,7 @@ export function FloatingTaskTimer() {
   const goal = goals?.find(g => g.id === task.linkedGoalId);
 
   return (
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className="fixed bottom-32 right-6 z-40">
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>

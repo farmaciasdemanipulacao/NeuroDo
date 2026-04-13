@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
+import { Button } from '@/components/ui/button';
 import { Play, Pause, StopCircle } from "lucide-react";
 import { useUser } from "@/firebase/provider";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -32,6 +32,11 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
     let interval: NodeJS.Timeout | null = null;
     const calcElapsed = () => {
       const start = new Date(activeTimer.startedAt).getTime();
+      if (activeTimer.isPaused && activeTimer.pausedAt) {
+        const paused = new Date(activeTimer.pausedAt).getTime();
+        setElapsed(Math.floor((paused - start) / 1000));
+        return;
+      }
       const now = Date.now();
       setElapsed(Math.floor((now - start) / 1000));
     };

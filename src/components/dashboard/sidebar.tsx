@@ -176,13 +176,10 @@ export function AppSidebar() {
                         {reportNavItems.map(({ href, icon: Icon, label, question }) => (
                           <SidebarMenuSubItem key={href}>
                             <SidebarMenuSubButton asChild isActive={pathname === href || pathname.startsWith(href)}>
-                              <Link href={href} onClick={handleLinkClick}>
-                                <div className="flex flex-col">
-                                  <div className="flex items-center gap-2">
-                                    <Icon />
-                                    <span>{label}</span>
-                                  </div>
-                                  <span className="text-xs text-muted-foreground">{question}</span>
+                              <Link href={href} onClick={handleLinkClick} title={question}>
+                                <div className="flex items-center gap-2">
+                                  <Icon />
+                                  <span>{label}</span>
                                 </div>
                               </Link>
                             </SidebarMenuSubButton>

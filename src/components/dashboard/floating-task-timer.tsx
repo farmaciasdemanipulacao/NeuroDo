@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTaskTimers } from '@/hooks/use-task-timers';
 import { useDashboardData } from '@/context/dashboard-data-provider';
 import { Pause, Play, StopCircle, Timer } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function FloatingTaskTimer() {
   const { activeTimer, pauseTimer, resumeTimer, stopTimer, loading } = useTaskTimers();

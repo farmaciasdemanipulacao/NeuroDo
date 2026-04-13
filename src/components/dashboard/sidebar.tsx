@@ -177,10 +177,8 @@ export function AppSidebar() {
                           <SidebarMenuSubItem key={href}>
                             <SidebarMenuSubButton asChild isActive={pathname === href || pathname.startsWith(href)}>
                               <Link href={href} onClick={handleLinkClick} title={question}>
-                                <div className="flex items-center gap-2">
-                                  <Icon />
-                                  <span>{label}</span>
-                                </div>
+                                <Icon className="h-4 w-4" />
+                                <span>{label}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

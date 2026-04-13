@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Play, Pause, StopCircle } from "lucide-react";
 import { useUser } from "@/firebase/provider";
@@ -8,42 +8,46 @@ import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Task, TimesheetEntry } from "@/lib/types";
+import { useTaskTimers } from '@/hooks/use-task-timers';
 
 interface TaskTimesheetProps {
   task: Task;
 }
 
 export function TaskTimesheet({ task }: TaskTimesheetProps) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [elapsed, setElapsed] = useState<number>(0); // em segundos
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [comment, setComment] = useState<string>('');
   const firestore = useFirestore();
   const { user } = useUser();
+  const { activeTimer, startTimer, pauseTimer, resumeTimer, stopTimer, loading } = useTaskTimers();
+  const isActive = activeTimer?.taskId === task.id && activeTimer.isActive;
+  const isPaused = activeTimer?.taskId === task.id && activeTimer.isPaused;
+  const [elapsed, setElapsed] = useState<number>(0);
 
-  const handleStart = () => {
-    setIsRunning(true);
-    setStartTime(new Date());
-    const id = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, 1000);
-    setIntervalId(id);
-  };
+  // Atualiza o timer localmente baseado no startedAt
+  useEffect(() => {
+    if (!activeTimer || activeTimer.taskId !== task.id || !activeTimer.startedAt) {
+      setElapsed(0);
+      return;
+    }
+    let interval: NodeJS.Timeout | null = null;
+    const calcElapsed = () => {
+      const start = new Date(activeTimer.startedAt).getTime();
+      const now = Date.now();
+      setElapsed(Math.floor((now - start) / 1000));
+    };
+    calcElapsed();
+    if (isActive) {
+      interval = setInterval(calcElapsed, 1000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [activeTimer, isActive, task.id]);
 
-  const handlePause = () => {
-    setIsRunning(false);
-    if (intervalId) clearInterval(intervalId);
-    setIntervalId(null);
-  };
 
+  // Finaliza timer e salva timesheet
   const handleStop = async () => {
-    setIsRunning(false);
-    if (intervalId) clearInterval(intervalId);
-    setIntervalId(null);
-    if (!user || !startTime || !firestore) return;
+    if (!user || !activeTimer || activeTimer.taskId !== task.id || !firestore) return;
     const endTime = new Date();
-    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+    const duration = Math.floor((endTime.getTime() - new Date(activeTimer.startedAt).getTime()) / 1000);
     const entry: TimesheetEntry = {
       taskId: task.id,
       taskTitle: task.content,
@@ -51,7 +55,7 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
       goalId: task.linkedGoalId,
       milestoneId: task.linkedMilestoneId,
       userId: user.uid,
-      startedAt: startTime.toISOString(),
+      startedAt: activeTimer.startedAt,
       endedAt: endTime.toISOString(),
       duration,
       createdAt: new Date().toISOString(),
@@ -60,28 +64,34 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
     try {
       const ref = collection(firestore, "users", user.uid, "timesheets");
       await addDocumentNonBlocking(ref, entry);
+      await stopTimer();
     } catch (err) {
       console.error('Falha ao salvar timesheet:', err);
     }
     setElapsed(0);
-    setStartTime(null);
     setComment('');
   };
 
   return (
     <div className="flex items-center gap-2 mt-2">
-      {isRunning ? (
-        <Button variant="outline" size="icon" onClick={handlePause} title="Pausar registro de tempo">
+      {isActive ? (
+        <Button variant="outline" size="icon" onClick={pauseTimer} title="Pausar registro de tempo" disabled={loading}>
           <Pause className="w-4 h-4" />
         </Button>
+      ) : isPaused ? (
+        <Button variant="outline" size="icon" onClick={resumeTimer} title="Retomar registro de tempo" disabled={loading}>
+          <Play className="w-4 h-4" />
+        </Button>
       ) : (
-        <Button variant="outline" size="icon" onClick={handleStart} title="Iniciar registro de tempo">
+        <Button variant="outline" size="icon" onClick={() => startTimer(task)} title="Iniciar registro de tempo" disabled={loading}>
           <Play className="w-4 h-4" />
         </Button>
       )}
-      <Button variant="outline" size="icon" onClick={handleStop} title="Finalizar e salvar registro">
-        <StopCircle className="w-4 h-4" />
-      </Button>
+      {(isActive || isPaused) && (
+        <Button variant="outline" size="icon" onClick={handleStop} title="Finalizar e salvar registro" disabled={loading}>
+          <StopCircle className="w-4 h-4" />
+        </Button>
+      )}
       <span className="text-xs text-muted-foreground ml-2">
         {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} min
       </span>
@@ -92,6 +102,7 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
         onChange={(e) => setComment(e.target.value)}
         onClick={(e) => e.stopPropagation()}
         className="ml-3 p-1 text-xs border rounded w-48"
+        disabled={loading}
       />
     </div>
   );

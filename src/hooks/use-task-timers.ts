@@ -69,12 +69,22 @@ export function useTaskTimers() {
     if (!user || !firestore || !activeTimer) return;
     setLoading(true);
     const ref = doc(firestore, 'users', user.uid, 'active_task_timer', 'current');
-    await setDoc(ref, {
-      ...activeTimer,
-      isPaused: false,
-      isActive: true,
-      pausedAt: undefined,
-    });
+    // Ao retomar, devemos ajustar startedAt para descontar o período em que o timer ficou pausado
+    try {
+      const updated = { ...activeTimer, isPaused: false, isActive: true } as any;
+      if (activeTimer.pausedAt) {
+        const pausedAtMs = new Date(activeTimer.pausedAt).getTime();
+        const startedAtMs = new Date(activeTimer.startedAt).getTime();
+        const pauseDuration = Date.now() - pausedAtMs;
+        // Avança o startedAt no servidor para ignorar o tempo em pausa
+        const newStartedAt = new Date(startedAtMs + pauseDuration).toISOString();
+        updated.startedAt = newStartedAt;
+        updated.pausedAt = undefined;
+      }
+      await setDoc(ref, updated);
+    } catch (err) {
+      console.error('Erro ao retomar timer:', err);
+    }
     setLoading(false);
   }, [user, firestore, activeTimer]);
 

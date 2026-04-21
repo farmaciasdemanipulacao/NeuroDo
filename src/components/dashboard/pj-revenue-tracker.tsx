@@ -249,7 +249,9 @@ export function PJRevenueTracker() {
                     {project.name}
                   </span>
                   {isHighExpense && (
-                    <AlertTriangle className="h-4 w-4 text-destructive" title="Custos acima de 60% do faturamento" />
+                    <span title="Custos acima de 60% do faturamento">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </span>
                   )}
                 </CardTitle>
               </CardHeader>

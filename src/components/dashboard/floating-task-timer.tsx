@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useTaskTimers } from '@/hooks/use-task-timers';
 import { useDashboardData } from '@/context/dashboard-data-provider';
+import { useProjects } from '@/hooks/use-projects';
 import { Pause, Play, StopCircle, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function FloatingTaskTimer() {
-  const { activeTimer, pauseTimer, resumeTimer, stopTimer, loading } = useTaskTimers();
-  const { tasks, projects, goals } = useDashboardData();
+  const { activeTimer, pauseTimer, resumeTimer, stopTimerAndSave, loading } = useTaskTimers();
+  const { tasks, goals } = useDashboardData();
+  const { projects } = useProjects();
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -34,10 +36,14 @@ export function FloatingTaskTimer() {
   }, [activeTimer]);
 
   if (!activeTimer) return null;
-  const task = tasks?.find(t => t.id === activeTimer.taskId);
+  const task = tasks?.find((currentTask) => currentTask.id === activeTimer.taskId);
   if (!task) return null;
-  const project = projects?.find(p => p.id === task.projectId);
-  const goal = goals?.find(g => g.id === task.linkedGoalId);
+  const project = projects?.find((currentProject) => currentProject.id === task.projectId);
+  const goal = goals?.find((currentGoal) => currentGoal.id === task.linkedGoalId);
+
+  const handleStop = async () => {
+    await stopTimerAndSave(task);
+  };
 
   return (
     <div className="fixed bottom-32 right-6 z-40">
@@ -64,7 +70,7 @@ export function FloatingTaskTimer() {
                     <Play className="w-4 h-4" />
                   </Button>
                 )}
-                <Button variant="outline" size="icon" onClick={stopTimer} disabled={loading}>
+                <Button variant="outline" size="icon" onClick={handleStop} disabled={loading}>
                   <StopCircle className="w-4 h-4" />
                 </Button>
                 <span className="ml-2 text-xs">{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, '0')} min</span>

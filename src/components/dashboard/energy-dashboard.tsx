@@ -237,7 +237,7 @@ export function EnergyDashboard() {
         userName: appUser?.displayName?.split(' ')[0] ?? 'você',
       });
 
-      if (result.error) {
+      if ('error' in result) {
         toast({
           title: 'Erro na análise',
           description: result.error,

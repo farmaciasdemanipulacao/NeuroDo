@@ -1,4 +1,12 @@
-import type { Project, Task, Achievement, Document, RoadmapMilestone, Goal, TeamMember } from './types';
+import type { Project, Achievement, Document, RoadmapMilestone, Goal } from './types';
+
+const SAMPLE_USER_ID = 'sample-user';
+
+type DailyGoalSample = Omit<Goal, 'type' | 'unit' | 'status'> & {
+  type: 'Diária';
+  unit: string;
+  status: 'Concluído' | 'Em Progresso' | 'Não Iniciado';
+};
 
 export const projects: Project[] = [
   {
@@ -9,7 +17,7 @@ export const projects: Project[] = [
     tailwindColor: 'project-envox',
     progress: 75,
     goals: ['Aumentar a receita do 3º trimestre em 15%', 'Lançar nova campanha de marketing', 'Otimizar infraestrutura de nuvem'],
-    status: 'Em dia',
+    status: 'active',
   },
   {
     id: 'FARMACIAS',
@@ -19,7 +27,7 @@ export const projects: Project[] = [
     tailwindColor: 'project-farmacias',
     progress: 40,
     goals: ['Finalizar ensaios da fase 2', 'Garantir financiamento Série B', 'Expandir equipe de pesquisa'],
-    status: 'Requer Atenção',
+    status: 'active',
   },
   {
     id: 'GERACAO-PJ',
@@ -29,7 +37,7 @@ export const projects: Project[] = [
     tailwindColor: 'project-geracao-pj',
     progress: 90,
     goals: ['Integrar 1000 novos usuários', 'Lançar a versão 2.0', 'Realizar cúpula anual'],
-    status: 'Adiantado',
+    status: 'active',
   },
   {
     id: 'FELIZMENTE',
@@ -39,7 +47,7 @@ export const projects: Project[] = [
     tailwindColor: 'project-felizmente',
     progress: 60,
     goals: ['Lançar módulo de mindfulness', 'Fazer parceria com 10 novos terapeutas', 'Melhorar o engajamento do usuário em 20%'],
-    status: 'Em dia',
+    status: 'active',
   },
   {
     id: 'INFLUENCERS',
@@ -49,7 +57,7 @@ export const projects: Project[] = [
     tailwindColor: 'project-influencers',
     progress: 25,
     goals: ['Identificar 50 parceiros potenciais', 'Assinar 5 novos contratos com influenciadores', 'Desenvolver diretrizes de conteúdo'],
-    status: 'Em Risco',
+    status: 'active',
   },
 ];
 
@@ -70,6 +78,7 @@ export const achievements: Achievement[] = [
 export const documents: Document[] = [
   {
     id: 'doc1',
+    userId: SAMPLE_USER_ID,
     title: 'Playbook de Vendas ENVOX',
     type: 'Playbook',
     content: 'Este documento detalha o processo de vendas de ponta a ponta...',
@@ -80,16 +89,18 @@ export const documents: Document[] = [
   },
   {
     id: 'doc2',
+    userId: SAMPLE_USER_ID,
     title: 'Estratégia de Lançamento GERAÇÃO PJ v2.0',
     type: 'Estratégia',
     content: 'Plano estratégico para o lançamento da versão 2.0...',
-    projectId: 'GERACAO_PJ',
+    projectId: 'GERACAO-PJ',
     isPinned: false,
     createdAt: '2023-09-20T09:00:00Z',
     updatedAt: '2023-10-18T11:00:00Z',
   },
   {
     id: 'doc3',
+    userId: SAMPLE_USER_ID,
     title: 'Processo de Onboarding de Influenciadores',
     type: 'Processo',
     content: 'Passo a passo para integrar novos influenciadores...',
@@ -103,8 +114,9 @@ export const documents: Document[] = [
 export const milestones: RoadmapMilestone[] = [
   {
     id: 'm1',
+    userId: SAMPLE_USER_ID,
     title: 'Q4 2024: Lançamento Beta',
-    projectId: 'GERACAO_PJ',
+    projectId: 'GERACAO-PJ',
     startDate: '2024-10-01',
     endDate: '2024-12-31',
     status: 'Em Progresso',
@@ -112,16 +124,18 @@ export const milestones: RoadmapMilestone[] = [
   },
   {
     id: 'm2',
+    userId: SAMPLE_USER_ID,
     title: 'Q1 2025: Financiamento Série B',
     projectId: 'FARMACIAS',
     startDate: '2025-01-01',
     endDate: '2025-03-31',
     status: 'Não Iniciado',
     progress: 0,
-    dependsOn: ['m3'],
+    dependsOn: 'm3',
   },
   {
     id: 'm3',
+    userId: SAMPLE_USER_ID,
     title: 'Q4 2024: Finalizar Ensaios Clínicos',
     projectId: 'FARMACIAS',
     startDate: '2024-10-01',
@@ -131,6 +145,7 @@ export const milestones: RoadmapMilestone[] = [
   },
   {
     id: 'm4',
+    userId: SAMPLE_USER_ID,
     title: 'Q1 2025: Campanha de Marketing Global',
     projectId: 'ENVOX',
     startDate: '2025-01-15',
@@ -144,15 +159,16 @@ export const milestones: RoadmapMilestone[] = [
 export const annualGoals: Goal[] = [
   {
     id: 'g-anual-1',
+    userId: SAMPLE_USER_ID,
     title: 'Atingir R$30.000/mês de faturamento líquido PF',
     description: 'A grande meta que guia todas as outras, com prazo final em Dezembro de 2026.',
-    type: 'Anual',
+    type: 'yearly',
     targetValue: 30000,
     currentValue: 5000,
-    unit: 'BRL',
+    unit: 'currency',
     startDate: '2024-01-01',
     endDate: '2026-12-01',
-    status: 'Em Progresso',
+    status: 'active',
     progress: 17,
   }
 ];
@@ -160,29 +176,31 @@ export const annualGoals: Goal[] = [
 export const quarterlyGoals: Goal[] = [
   {
     id: 'g-q3-1',
+    userId: SAMPLE_USER_ID,
     title: 'Q3 2024: Validar o MVP do Projeto X',
     description: 'Lançar e obter os primeiros 100 usuários pagantes.',
-    type: 'Trimestral',
+    type: 'quarterly',
     targetValue: 100,
     currentValue: 20,
-    unit: 'usuários',
+    unit: 'number',
     startDate: '2024-07-01',
     endDate: '2024-09-30',
-    status: 'Em Progresso',
+    status: 'active',
     progress: 20,
     parentGoalId: 'g-anual-1'
   },
   {
     id: 'g-q3-2',
+    userId: SAMPLE_USER_ID,
     title: 'Q3 2024: Dobrar a receita do ENVOX',
     description: 'Foco em aquisição de novos clientes e upsell.',
-    type: 'Trimestral',
+    type: 'quarterly',
     targetValue: 10000,
     currentValue: 6000,
-    unit: 'BRL',
+    unit: 'currency',
     startDate: '2024-07-01',
     endDate: '2024-09-30',
-    status: 'Em Progresso',
+    status: 'active',
     progress: 60,
     parentGoalId: 'g-anual-1'
   },
@@ -191,29 +209,31 @@ export const quarterlyGoals: Goal[] = [
 export const monthlyGoals: Goal[] = [
   {
     id: 'g-m7-1',
+    userId: SAMPLE_USER_ID,
     title: 'Julho: Finalizar o funil de vendas do Projeto X',
     description: 'Desde a landing page até o checkout funcional.',
-    type: 'Mensal',
+    type: 'monthly',
     targetValue: 100,
     currentValue: 80,
-    unit: '%',
+    unit: 'percentage',
     startDate: '2024-07-01',
     endDate: '2024-07-31',
-    status: 'Em Progresso',
+    status: 'active',
     progress: 80,
     parentGoalId: 'g-q3-1'
   },
   {
     id: 'g-m7-2',
+    userId: SAMPLE_USER_ID,
     title: 'Julho: Aumentar a prospecção do ENVOX em 20%',
     description: 'Aumentar o número de leads qualificados.',
-    type: 'Mensal',
+    type: 'monthly',
     targetValue: 120,
     currentValue: 50,
-    unit: 'leads',
+    unit: 'number',
     startDate: '2024-07-01',
     endDate: '2024-07-31',
-    status: 'Atrasado',
+    status: 'active',
     progress: 42,
     parentGoalId: 'g-q3-2'
   },
@@ -222,23 +242,25 @@ export const monthlyGoals: Goal[] = [
 export const weeklyGoals: Goal[] = [
    {
     id: 'g-w29-1',
+    userId: SAMPLE_USER_ID,
     title: 'Semana 29: Testar o checkout',
     description: 'Garantir que os pagamentos sejam processados sem erros.',
-    type: 'Semanal',
+    type: 'weekly',
     targetValue: 1,
     currentValue: 0,
-    unit: 'teste',
+    unit: 'number',
     startDate: '2024-07-15',
     endDate: '2024-07-21',
-    status: 'Em Progresso',
+    status: 'active',
     progress: 50,
     parentGoalId: 'g-m7-1'
   },
 ];
 
-export const dailyGoals: Goal[] = [
+export const dailyGoals: DailyGoalSample[] = [
   {
     id: 'g-d18-1',
+    userId: SAMPLE_USER_ID,
     title: 'Revisar a copy da landing page',
     description: '',
     type: 'Diária',
@@ -253,6 +275,7 @@ export const dailyGoals: Goal[] = [
   },
   {
     id: 'g-d18-2',
+    userId: SAMPLE_USER_ID,
     title: 'Ligar para 5 novos leads do ENVOX',
     description: '',
     type: 'Diária',
@@ -267,6 +290,7 @@ export const dailyGoals: Goal[] = [
   },
   {
     id: 'g-d18-3',
+    userId: SAMPLE_USER_ID,
     title: 'Estruturar o doc de estratégia de conteúdo',
     description: '',
     type: 'Diária',

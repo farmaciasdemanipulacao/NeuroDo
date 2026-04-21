@@ -168,7 +168,7 @@ export default function TeamMemberPage() {
     const [questionnaireLink, setQuestionnaireLink] = useState<string | null>(null);
     const [isGeneratingFeedback, setIsGeneratingFeedback] = useState(false);
     const [generatedScript, setGeneratedScript] = useState<GenerateFeedbackSessionOutput | null>(null);
-    const [formInitialTab, setFormInitialTab] = useState('profile');
+    const [formInitialTab, setFormInitialTab] = useState<'profile' | 'pdi'>('profile');
 
     const memberRef = useMemoFirebase(() => {
         if (!firestore || !user || !memberId) return null;

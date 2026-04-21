@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useStorage } from '@/firebase';
+import { useMemo, useState } from 'react';
+import { useFirebaseApp } from '@/firebase';
 import {
+  getStorage,
   ref,
   uploadBytesResumable,
   getDownloadURL,
@@ -17,7 +18,8 @@ interface FileUploadState {
 }
 
 export function useFileUpload() {
-  const storage = useStorage();
+  const firebaseApp = useFirebaseApp();
+  const storage = useMemo(() => getStorage(firebaseApp), [firebaseApp]);
   const [uploadState, setUploadState] = useState<FileUploadState>({
     isUploading: false,
     progress: 0,
@@ -27,13 +29,6 @@ export function useFileUpload() {
 
   const uploadFile = (file: File, path: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      if (!storage) {
-        const errorMsg = 'Firebase Storage is not initialized.';
-        setUploadState((prev) => ({ ...prev, error: errorMsg }));
-        reject(new Error(errorMsg));
-        return;
-      }
-
       const storageRef = ref(storage, path);
       const uploadTask = uploadBytesResumable(storageRef, file);
 

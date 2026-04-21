@@ -43,11 +43,17 @@ interface GoalFormProps {
   onSuccess: () => void;
 }
 
+const getSafeGoalDate = (date?: Goal['endDate']): Date => {
+  if (!date) return new Date();
+  if (typeof date === 'string') return new Date(date);
+  return date.toDate();
+};
+
 const getDefaultValues = (goal: Goal | null) => ({
     title: goal?.title || '',
     description: goal?.description || '',
     type: goal?.type || 'monthly',
-    endDate: goal?.endDate ? (typeof goal.endDate === 'string' ? new Date(goal.endDate) : (goal.endDate as any).toDate ? (goal.endDate as any).toDate() : new Date(goal.endDate)) : new Date(),
+    endDate: getSafeGoalDate(goal?.endDate),
     targetValue: goal?.targetValue || 100,
     currentValue: goal?.currentValue || 0,
     unit: goal?.unit || 'number',

@@ -24,8 +24,8 @@ import { useProjects } from '@/hooks/use-projects';
 import { Loader2, Save } from 'lucide-react';
 import { format } from 'date-fns';
 
-const statusOptions: DelegationTaskStatus[] = ["Pendente", "Em Progresso", "Aguardando Resposta", "Concluída", "Atrasada"];
-const priorityOptions: DelegationPriority[] = ["Alta", "Média", "Baixa"];
+const statusOptions = ["Pendente", "Em Progresso", "Aguardando Resposta", "Concluída", "Atrasada"] as const satisfies readonly DelegationTaskStatus[];
+const priorityOptions = ["Alta", "Média", "Baixa"] as const satisfies readonly DelegationPriority[];
 
 const delegationFormSchema = z.object({
   taskTitle: z.string().min(5, 'O título da tarefa precisa ter pelo menos 5 caracteres.'),

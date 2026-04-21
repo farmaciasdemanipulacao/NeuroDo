@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from '@/components/ui/button';
 import { Play, Pause, StopCircle } from "lucide-react";
-import { useUser } from "@/firebase/provider";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
-import type { Task, TimesheetEntry } from "@/lib/types";
+import type { Task } from "@/lib/types";
 import { useTaskTimers } from '@/hooks/use-task-timers';
 
 interface TaskTimesheetProps {
@@ -16,9 +12,7 @@ interface TaskTimesheetProps {
 
 export function TaskTimesheet({ task }: TaskTimesheetProps) {
   const [comment, setComment] = useState<string>('');
-  const firestore = useFirestore();
-  const { user } = useUser();
-  const { activeTimer, startTimer, pauseTimer, resumeTimer, stopTimer, loading } = useTaskTimers();
+  const { activeTimer, startTimer, pauseTimer, resumeTimer, stopTimerAndSave, loading } = useTaskTimers();
   const isActive = activeTimer?.taskId === task.id && activeTimer.isActive;
   const isPaused = activeTimer?.taskId === task.id && activeTimer.isPaused;
   const [elapsed, setElapsed] = useState<number>(0);
@@ -50,29 +44,13 @@ export function TaskTimesheet({ task }: TaskTimesheetProps) {
 
   // Finaliza timer e salva timesheet
   const handleStop = async () => {
-    if (!user || !activeTimer || activeTimer.taskId !== task.id || !firestore) return;
-    const endTime = new Date();
-    const duration = Math.floor((endTime.getTime() - new Date(activeTimer.startedAt).getTime()) / 1000);
-    const entry: TimesheetEntry = {
-      taskId: task.id,
-      taskTitle: task.content,
-      projectId: task.projectId,
-      goalId: task.linkedGoalId,
-      milestoneId: task.linkedMilestoneId,
-      userId: user.uid,
-      startedAt: activeTimer.startedAt,
-      endedAt: endTime.toISOString(),
-      duration,
-      createdAt: new Date().toISOString(),
-      comment: comment || undefined,
-    };
-    try {
-      const ref = collection(firestore, "users", user.uid, "timesheets");
-      await addDocumentNonBlocking(ref, entry);
-      await stopTimer();
-    } catch (err) {
-      console.error('Falha ao salvar timesheet:', err);
+    if (!activeTimer || activeTimer.taskId !== task.id) return;
+
+    const savedEntry = await stopTimerAndSave(task, comment);
+    if (!savedEntry) {
+      return;
     }
+
     setElapsed(0);
     setComment('');
   };

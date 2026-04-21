@@ -22,6 +22,12 @@ import { HelpButton } from '../ui/help-button';
 import { helpContent } from '@/lib/help-content';
 import { GoalMilestonesWidget } from './goal-milestones-widget';
 
+const getSafeGoalDate = (date: Goal['endDate'] | undefined): Date => {
+    if (!date) return new Date(0);
+    if (typeof date === 'string') return new Date(date);
+    return date.toDate();
+};
+
 const getProgressColor = (progress: number) => {
     if (progress < 30) return 'bg-red-500';
     if (progress < 70) return 'bg-yellow-500';
@@ -167,7 +173,7 @@ export function GoalsView() {
     const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsQuery);
 
     const { annualGoals, quarterlyGoals, monthlyGoals, weeklyGoals } = useMemo(() => {
-        const sortedGoals = goals ? [...goals].sort((a,b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()) : [];
+        const sortedGoals = goals ? [...goals].sort((a,b) => getSafeGoalDate(a.endDate).getTime() - getSafeGoalDate(b.endDate).getTime()) : [];
         return {
             annualGoals: sortedGoals.filter(g => g.type === 'yearly'),
             quarterlyGoals: sortedGoals.filter(g => g.type === 'quarterly'),

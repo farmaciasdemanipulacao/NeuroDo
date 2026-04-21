@@ -1,87 +1,557 @@
-# Documento de Status do Projeto: NeuroDO
+# Status Atual do Projeto: NeuroDo
 
-**Última Atualização:** 25 de Julho de 2024
+Atualizado em `2026-04-21`, com base no código atual do repositório.
 
-Este documento serve como um resumo abrangente do estado atual do aplicativo NeuroDO. O objetivo é fornecer um "mapa da situação" para qualquer membro da equipe ou IA colaboradora (como o Claude) para entender rapidamente o que foi construído, o que está por vir e os princípios que guiam o desenvolvimento.
+## Fonte de verdade
 
----
+Este documento foi montado a partir de:
 
-## 1. Visão Geral e Filosofia do Projeto
+- inspeção do código em `src/`
+- rotas reais do `App Router`
+- hooks e coleções do Firestore
+- fluxos de IA ativos
+- checagens locais com `npm run typecheck` e `npm run lint`
 
-**NeuroDO** é um "Sistema Operacional para o Empreendedor Neurodivergente". Ele não é apenas uma ferramenta de produtividade, mas um parceiro de gestão projetado especificamente para cérebros que prosperam com novidade, contexto visual e gamificação, enquanto lutam contra a monotonia e a sobrecarga de informações.
+## Resumo executivo
 
-As diretrizes principais que governam o desenvolvimento são:
+O projeto já funciona como um dashboard operacional relativamente amplo para:
 
-- **Especialista em Neurodiversidade:** O sistema deve atuar como um especialista em TDAH, superdotação e autismo leve, com foco em maximizar o desempenho e o bem-estar. As funcionalidades devem ser projetadas para apoiar, e não para combater, as características desses perfis.
-- **Sistema Adaptativo:** Para combater o tédio e a necessidade constante de novidade, o sistema deve ser capaz de mudar sua aparência (temas), sua estrutura (layouts de dashboard) e suas regras (gamificação por temporadas).
-- **Delegação como Pilar:** O sistema deve ativamente incentivar e facilitar a delegação de tarefas, pois este é o caminho principal para o crescimento do CEO.
-- **Feedback Visual e Imediato:** O progresso e a urgência devem ser comunicados visualmente sempre que possível (ex: barras de progresso, cores de urgência dinâmicas).
+- organizar execução diária
+- acompanhar metas e projetos
+- gerir equipe, delegações e documentos
+- usar IA como suporte de foco, revisão e gestão
 
----
+Ao mesmo tempo, o código está em fase híbrida:
 
-## 2. Funcionalidades Implementadas e Funcionando
+- parte do app está bem conectada ao Firestore
+- parte ainda usa modelos legados/estáticos
+- existem inconsistências entre caminhos de dados, tipos e integrações
 
-### **Core & Estrutura**
-- **Autenticação Anônima:** Os usuários podem começar a usar o app imediatamente com uma conta anônima criada em segundo plano.
-- **Layout do Dashboard:** A estrutura principal com Sidebar (navegação), Header e área de conteúdo principal está totalmente funcional.
-- **Banco de Dados (Seed):** Um script (`/src/lib/seed.ts`) permite popular o banco de dados com dados de teste realistas, incluindo tarefas, metas e equipe com fotos. O script é destrutivo, garantindo um ambiente limpo a cada execução.
-- **Backend & Segurança:** Firestore está configurado com regras de segurança que garantem que cada usuário só possa acessar e modificar seus próprios dados.
+## Stack confirmada no código
 
-### **Módulos de Produtividade**
-- **Plano do Dia (Tarefas):**
-  - CRUD (Criar, Ler, Atualizar, Excluir) completo para tarefas diárias.
-  - As tarefas são exibidas agrupadas por período (Manhã, Tarde, Noite).
-  - Funcionalidade de "Tarefa Mais Importante" (MIT).
-- **Delegações:**
-  - CRUD completo para delegações, vinculando uma tarefa a um membro da equipe.
-  - **Automação de Gestão:** Ao delegar, o sistema cria automaticamente tarefas de "passar o bastão" e "cobrar entrega" para o gestor.
-  - **Urgência Dinâmica por Cor:** Os cards de delegação mudam a cor da borda com base na proximidade do prazo, usando um degradê de verde (seguro) para amarelo (atenção) e vermelho (urgente/atrasado), com opacidade variável.
-- **Pirâmide de Metas:**
-  - CRUD completo para metas, permitindo a criação de uma hierarquia (Anual, Trimestral, Mensal, etc.).
-  - Acompanhamento de progresso com barras visuais.
-- **Roadmap de Projetos:**
-  - CRUD completo para marcos (milestones) de projetos.
-  - Visualização em formato de linha do tempo, agrupada por projeto.
-- **Documentos (Base de Conhecimento):**
-  - CRUD completo para documentos como Playbooks, Estratégias e Processos.
+- `Next.js 15.5.9`
+- `React 19.2.1`
+- `TypeScript`
+- `Firebase Auth`
+- `Firestore`
+- `OpenAI` via Server Actions
+- `Tailwind CSS`
+- `shadcn/ui`, `Radix UI`, `Recharts`, `react-hook-form`, `zod`
 
-### **Módulos de Pessoas (CRM Pessoal)**
-- **Central de Relacionamentos (Equipe):**
-  - CRUD completo para perfis de membros da equipe, amigos, mentores, etc.
-  - Página de perfil detalhada para cada pessoa.
-- **IA para Gestão de Pessoas:**
-  - **Questionário de Perfil Comportamental:** Uma página pública (`/q/[id]`) onde um membro da equipe responde a uma entrevista conduzida por IA para gerar seu perfil.
-  - **Geração de Roteiro de Feedback:** Uma ferramenta que usa IA para criar um script de feedback personalizado com base no perfil do colaborador, usando a técnica SBI (Situação-Comportamento-Impacto).
-  - **Geração de PDI (Plano de Desenvolvimento Individual):** Uma IA que analisa o perfil e as funções de uma pessoa para sugerir um plano de desenvolvimento acionável.
+Observação:
 
-### **IA & Gamificação**
-- **Chat com Mentor IA:** Um chat flutuante para conversas e orientações rápidas.
-- **Captura Rápida de Ideias:** Uma ferramenta para anotar ideias rapidamente, onde a IA classifica e decide se a ideia é relevante para os projetos atuais ou se deve ser arquivada.
-- **Gamificação Básica:**
-  - Sistema de XP ao completar tarefas.
-  - Níveis de usuário baseados no XP acumulado.
-  - Contador de "sequência" (dias consecutivos de progresso).
+- `genkit` e `@genkit-ai/google-genai` estão instalados, mas a camada ativa de IA no app atual usa `OpenAI` diretamente
 
----
+## Mapa funcional real
 
-## 3. Funcionalidades Planejadas (A Implementar)
+### Acesso e shell
 
-### **Estratégia Principal: O Sistema Adaptativo**
-Esta é a próxima grande iniciativa para combater o tédio e manter o engajamento.
-- **Nível 1 (Próximo Passo): Temas Visuais Dinâmicos:** Implementar um seletor de temas (ex: Hiperfoco, Criativo) que altera o esquema de cores e a aparência geral do app.
-- **Nível 2: "Perspectivas" de Dashboard:** Criar layouts de dashboard alternativos (ex: "Visão de CEO", "Visão de Execução") que reorganizam os componentes para focar em diferentes tipos de informação.
-- **Nível 3: Gamificação Avançada:** Introduzir "Temporadas" (ciclos trimestrais com novas metas e temas), desafios semanais gerados pela IA e conquistas secretas para criar recompensas variáveis e inesperadas.
+- `/` redireciona para `/dashboard`
+- `/login` já implementa:
+  - login por e-mail/senha
+  - cadastro por e-mail/senha
+  - login com Google
+- o dashboard exige autenticação no `layout.tsx`
 
-### **Conexão de Dados no Frontend**
-Muitos componentes do frontend ainda usam dados estáticos de teste.
-- **Conectar o Dashboard:** O widget "Metas do Dia" e a "Visão Geral do Projeto" precisam buscar dados do Firestore em tempo real.
-- **Conectar a Página de Métricas:** A página de "Métricas & Conquistas" precisa ser conectada às coleções `user_stats` e `achievements` do Firestore.
-- **Salvar Revisão Noturna:** O formulário de Revisão Noturna precisa salvar as respostas em uma nova coleção `reviews` no Firestore.
+### Dashboard principal
 
-### **Melhorias de IA**
-- **Contexto de Projetos no Chat:** O Mentor IA precisa de acesso em tempo real aos documentos, metas e tarefas do usuário para fornecer conselhos mais profundos e contextualizados.
-- **Inteligência Proativa:** A IA poderia, por exemplo, sugerir a criação de um "Playbook" ao detectar uma tarefa que foi executada manualmente várias vezes.
+Em `/dashboard`, o código renderiza:
 
-### **Finalização de Funcionalidades Core**
-- **Autenticação Completa:** Implementar fluxos de cadastro e login com E-mail/Senha e provedores sociais (Google), além da funcionalidade de Logout.
-- **Notificações:** Criar um sistema de notificações para lembretes de tarefas, follow-ups de delegação e conquistas desbloqueadas.
+- meta principal de receita
+- streak
+- XP
+- plano do dia
+- sugestões do MentorDo
+- visão geral de projetos
+- estabilidade dos projetos
+- slots de execução
+- papel do dono
+- receita estimada por projetos
+- botão de seed de dados
+
+### Tarefas e execução
+
+Em `/dashboard/plan`:
+
+- CRUD de tarefas
+- agrupamento por `Manhã`, `Tarde`, `Noite`
+- MIT
+- vínculo com projeto/meta/milestone
+- incremento automático de meta ao concluir tarefa
+- reordenação
+- exclusão
+- registro de tempo por tarefa
+
+Coleções usadas:
+
+- `users/{uid}/tasks`
+- `users/{uid}/timesheets`
+- `users/{uid}/active_task_timer/current`
+- `users/{uid}/user_stats/data`
+
+### Metas
+
+Em `/dashboard/goals`:
+
+- CRUD de metas
+- tipos: `yearly`, `quarterly`, `monthly`, `weekly`
+- hierarquia por `parentGoalId`
+- vínculo opcional com projeto
+- widget de milestones vinculadas
+- avanço rápido por dialog no dashboard
+
+Coleção:
+
+- `users/{uid}/goals`
+
+### Projetos
+
+Em `/dashboard/projects`:
+
+- CRUD de projetos gerenciados
+- categorias:
+  - `execution`
+  - `oversight`
+  - `personal`
+- controle de prioridade
+- owner role
+- estimativa de receita
+- changelog por projeto
+- exclusão agendada e cancelamento
+- mentor de projetos com IA
+
+Coleção:
+
+- `users/{uid}/projects`
+
+### Roadmap
+
+Em `/dashboard/roadmap` e `/dashboard/roadmap/[milestoneId]`:
+
+- CRUD de milestones
+- progresso
+- vínculo opcional com meta
+- subtarefas por milestone
+- geração de checklist com IA
+- criação de task a partir de subtask
+- tela de detalhe do milestone
+
+Coleções:
+
+- `users/{uid}/milestones`
+- `users/{uid}/milestones/{milestoneId}/subtasks`
+
+### Delegações
+
+Em `/dashboard/delegations`:
+
+- CRUD de delegações
+- associação com membro da equipe
+- status e prioridade
+- vínculo com projeto/meta
+- leitura visual de urgência por data
+
+Coleção:
+
+- `users/{uid}/delegations`
+
+Observação:
+
+- a automação citada na doc antiga de criar tarefas automáticas de follow-up não aparece no código atual
+
+### Equipe
+
+Em `/dashboard/team` e `/dashboard/team/[memberId]`:
+
+- CRUD de membros da equipe
+- perfil individual
+- questionário público com IA
+- geração de perfil comportamental
+- geração de feedback com IA
+- geração de PDI com IA
+
+Coleções lidas pela UI:
+
+- `users/{uid}/team`
+- `users/{uid}/feedback_sessions`
+- `users/{uid}/pdi_history`
+- `profile_questionnaires`
+
+Observação importante:
+
+- os fluxos `generate-feedback-session` e `generate-pdi` salvam histórico em coleções top-level:
+  - `feedback_sessions`
+  - `pdi_history`
+- a UI lê em subcoleções do usuário:
+  - `users/{uid}/feedback_sessions`
+  - `users/{uid}/pdi_history`
+- portanto há divergência real entre escrita e leitura do histórico
+
+### Documentos
+
+Em `/dashboard/documents`:
+
+- CRUD de documentos
+- tipos:
+  - `Playbook`
+  - `Planejamento`
+  - `Estratégia`
+  - `Processo`
+  - `Referência`
+  - `Checklist`
+- filtro por projeto
+- filtro por tipo
+- pin de documento
+
+Coleção:
+
+- `users/{uid}/documents`
+
+### Receita PF e PJ
+
+Em `/dashboard/revenue/pf`:
+
+- registro mensal de distribuição PF por projeto
+
+Em `/dashboard/revenue/pj`:
+
+- registro mensal de faturamento bruto, despesas e líquido por projeto
+
+Coleções:
+
+- `users/{uid}/revenue`
+- `users/{uid}/revenue_pj`
+
+### Energia e revisão
+
+Em `/dashboard/energy`:
+
+- dashboard analítico baseado em revisões e check-ins
+- gráfico de padrão por dia
+- análise com IA
+- integração com medicações do perfil `Sobre Mim`
+
+Em `/dashboard/review`:
+
+- revisão noturna
+- geração de análise + tarefas para amanhã com IA
+- gravação do review
+- criação automática de tasks para o dia seguinte
+
+Coleções:
+
+- `users/{uid}/energy_checkins`
+- `users/{uid}/reviews`
+
+### Foco
+
+Em `/dashboard/focus`:
+
+- timer de foco adaptado ao nível de energia
+- persistência local
+- gravação de histórico
+- analytics de foco
+
+Coleção:
+
+- `users/{uid}/focus_sessions`
+
+### Métricas
+
+Em `/dashboard/metrics`:
+
+- KPIs de XP, nível, streak, tarefas e foco
+- gráfico de tarefas concluídas
+- progresso de metas
+- conquistas renderizadas a partir de IDs em `user_stats`
+
+Coleções:
+
+- `users/{uid}/user_stats/data`
+- `users/{uid}/tasks`
+- `users/{uid}/goals`
+
+### Configurações e perfil
+
+Em `/dashboard/settings`:
+
+- notificações
+- timer padrão
+- tema visual
+- resumo de perfil/nível
+
+Coleção:
+
+- `users/{uid}/preferences/data`
+
+Em `/dashboard/settings/sobre-mim`:
+
+- perfil pessoal para o MentorDo
+- cadastro de medicações
+- work style, life goals e contexto pessoal
+
+Coleção:
+
+- `users/{uid}/profile/mentordo`
+
+### MentorDo
+
+Em `/dashboard/mentor`:
+
+- formulário legado de perfil do MentorDo
+
+Coleção:
+
+- `users/{uid}/mentorDo/profile`
+
+No shell do dashboard:
+
+- chat flutuante do MentorDo
+- botão SOS do mentor de projetos
+- mentor de projetos na página `/dashboard/projects`
+
+### Admin e validação
+
+Em `/dashboard/admin`:
+
+- shell administrativo simples
+- link para config do MentorDo
+
+Em `/dashboard/admin/mentor-do`:
+
+- salva prompt base, modelo e mensagens em:
+  - `mentorDoConfig/default`
+
+Em `/dashboard/validar`:
+
+- diagnóstico de Firestore em tempo real
+- teste de escrita/leitura/remoção
+
+## Fluxos de IA realmente usados
+
+### Em produção no app
+
+- `chat-with-mentor.ts`
+  - chat do MentorDo
+- `mentor-projects.ts`
+  - mentor de projetos e SOS
+- `provide-context-aware-assistance.ts`
+  - sugestões de tarefa no dashboard
+- `generate-nightly-review.ts`
+  - revisão noturna
+- `analyze-energy-patterns.ts`
+  - análise do dashboard de energia
+- `breakdown-milestone.ts`
+  - checklist de milestones
+- `conduct-profile-interview.ts`
+  - questionário público de equipe
+- `generate-behavioral-profile.ts`
+  - perfil comportamental
+- `generate-feedback-session.ts`
+  - roteiro de feedback
+- `generate-pdi.ts`
+  - PDI
+- `generate-text-flow.ts`
+  - assistências menores na equipe
+
+### Endpoint auxiliar
+
+- `GET /api/mentor-health`
+  - valida `OPENAI_API_KEY`
+  - expõe status e modelo configurado
+
+## Mapa real do Firestore
+
+### Documento principal do usuário
+
+- `users/{uid}`
+
+### Subcoleções/documentos usados
+
+- `users/{uid}/tasks`
+- `users/{uid}/goals`
+- `users/{uid}/projects`
+- `users/{uid}/delegations`
+- `users/{uid}/team`
+- `users/{uid}/documents`
+- `users/{uid}/milestones`
+- `users/{uid}/milestones/{milestoneId}/subtasks`
+- `users/{uid}/reviews`
+- `users/{uid}/energy_checkins`
+- `users/{uid}/focus_sessions`
+- `users/{uid}/timesheets`
+- `users/{uid}/revenue`
+- `users/{uid}/revenue_pj`
+- `users/{uid}/preferences/data`
+- `users/{uid}/user_stats/data`
+- `users/{uid}/active_task_timer/current`
+- `users/{uid}/mentorDo/profile`
+- `users/{uid}/profile/mentordo`
+- `users/{uid}/feedback_sessions`
+- `users/{uid}/pdi_history`
+
+### Coleções/documentos top-level
+
+- `profile_questionnaires`
+- `mentorDoConfig/default`
+- `feedback_sessions`
+- `pdi_history`
+
+## Inconsistências e gaps verificados
+
+### 1. Perfil do MentorDo duplicado
+
+Existem dois caminhos concorrentes:
+
+- `users/{uid}/mentorDo/profile`
+- `users/{uid}/profile/mentordo`
+
+Impacto:
+
+- o chat lê um perfil
+- a tela `Sobre Mim` grava em outro
+- o app hoje não tem uma única fonte de verdade para contexto do MentorDo
+
+### 2. Histórico de feedback/PDI desalinhado
+
+- escrita pelo servidor: coleções top-level
+- leitura pela UI: subcoleções do usuário
+
+Impacto:
+
+- histórico pode ser salvo, mas não aparecer onde a interface espera
+
+### 3. Configuração admin do MentorDo não está conectada aos fluxos
+
+- `/dashboard/admin/mentor-do` grava `mentorDoConfig/default`
+- os flows atuais usam prompts hardcoded
+
+Impacto:
+
+- a tela admin hoje não controla o comportamento real do MentorDo
+
+### 4. Projeto usa dois modelos de projeto
+
+Modelos coexistindo:
+
+- modelo legado `Project`
+- modelo atual `ManagedProject`
+
+Arquivos que ainda dependem de legado/estático:
+
+- `project-overview.tsx`
+- `revenue-goal-widget.tsx`
+- `task-suggestions.tsx`
+- `idea-catcher.tsx`
+
+Impacto:
+
+- parte da experiência usa dados reais
+- parte ainda depende de `src/lib/data.ts`
+
+### 5. `IdeaCatcher` não persiste
+
+Hoje ele:
+
+- chama IA
+- mostra toast
+- faz `console.log`
+
+Mas não grava a ideia em nenhuma coleção
+
+### 6. Relatórios ainda incompletos
+
+- `/dashboard/reports/productivity` tem leitura real de `timesheets`
+- `/dashboard/reports/energy` está placeholder
+- `/dashboard/reports/gamification` está placeholder
+
+### 7. Link de gamificação quebrado na sidebar
+
+O menu aponta para:
+
+- `/dashboard/gamification`
+
+Mas a rota existente é:
+
+- `/dashboard/reports/gamification`
+
+### 8. `use-file-upload` está quebrado no estado atual
+
+- importa `useStorage` de `@/firebase`
+- esse export não existe
+
+### 9. Build configurado para ignorar erros
+
+Em `next.config.ts`:
+
+- `typescript.ignoreBuildErrors = true`
+- `eslint.ignoreDuringBuilds = true`
+
+Impacto:
+
+- o app pode buildar mesmo com erros reais de tipagem/lint
+
+## Resultado das checagens locais
+
+### TypeScript
+
+Comando executado:
+
+```bash
+npm run typecheck
+```
+
+Resultado:
+
+- falha com `51` erros
+
+Principais grupos:
+
+- `39` erros em `src/lib/data.ts`
+- incompatibilidades de tipo em:
+  - `delegation-form.tsx`
+  - `goal-form.tsx`
+  - `goals-view.tsx`
+  - `energy-dashboard.tsx`
+  - `floating-task-timer.tsx`
+  - `team/[memberId]/page.tsx`
+  - `pj-revenue-tracker.tsx`
+  - `ui/calendar.tsx`
+  - `use-file-upload.ts`
+
+### Lint
+
+Comando executado:
+
+```bash
+npm run lint
+```
+
+Resultado:
+
+- falha antes de lintar o código por erro de configuração:
+  - `Converting circular structure to JSON`
+  - referência a `.eslintrc.json`
+
+Observação adicional:
+
+- `next lint` já aparece como deprecated no Next atual
+
+## Leitura honesta do estado do projeto
+
+O projeto já tem bastante superfície funcional e várias áreas usáveis de verdade. O núcleo de produtividade, gestão e IA existe.
+
+O que falta hoje não é “ideia de produto”. O que falta é consolidar a base técnica:
+
+- unificar fontes de dados legadas e atuais
+- corrigir tipagem
+- alinhar caminhos de leitura/escrita no Firestore
+- ligar configurações admin ao comportamento real da IA
+- eliminar placeholders e links quebrados
+
+Se a meta for estabilizar o projeto, o próximo passo mais produtivo é tratar primeiro:
+
+1. tipagem e lint
+2. modelo único de projeto
+3. fonte única do perfil do MentorDo
+4. correção das coleções de histórico de feedback/PDI

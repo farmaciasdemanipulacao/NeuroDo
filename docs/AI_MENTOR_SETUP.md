@@ -1,152 +1,278 @@
-# Guia de Configuração do Mentor IA
+# Setup Atual do MentorDo
 
-## Visão Geral
+Documento refeito a partir do código atual em `2026-04-21`.
 
-O Mentor IA do NeuroDo utiliza a OpenAI API para fornecer orientação personalizada. Este documento detalha a configuração e troubleshooting.
+## O que é o MentorDo hoje
 
-## Configuração Obrigatória
+No código atual, "MentorDo" não é um único módulo. É um conjunto de fluxos OpenAI usados em áreas diferentes do app:
 
-### 1. Variáveis de Ambiente
+- chat contextual
+- mentor de projetos
+- sugestões de tarefa
+- análise de energia
+- revisão noturna
+- breakdown de milestone
+- questionário de perfil
+- feedback
+- PDI
 
-Adicione ao seu arquivos `.env.local` (local) e a ambiente de produção (Vercel):
+Todos os fluxos ativos usam `OpenAI` diretamente. O app não usa Vector Store no fluxo atual.
+
+## Variáveis de ambiente obrigatórias
 
 ```env
-# OBRIGATÓRIO - Sua chave de API OpenAI
-# Obtenha em: https://platform.openai.com/api-keys
 OPENAI_API_KEY=sk-...
-
-# OPCIONAL - ID do Vector Store para busca de contexto
-NEURODO_VECTOR_STORE_ID=vs-...
-
-# OPCIONAL - Modelo a usar (padrão: gpt-4o-mini)
 NEURODO_MODEL=gpt-4o-mini
 ```
 
-### 2. Configuração na Vercel
+## Variáveis complementares
 
-1. Acesse o dashboard do Vercel
-2. Selecione o projeto NeuroDo
-3. Vá para **Settings** → **Environment Variables**
-4. Adicione as variáveis acima
-5. Clique em **Save** e redeploy
+Necessárias para os fluxos que usam Firebase Admin no servidor.
 
-## Troubleshooting
+```env
+FIREBASE_SERVICE_ACCOUNT_KEY={...json...}
+FIREBASE_PROJECT_ID=...
+```
 
-### Erro: "An error occurred in the Server Components render"
+Firebase client do app:
 
-**Causa:** Geralmente significa que uma das variáveis de ambiente não está disponível no servidor.
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+```
 
-**Solução:**
-1. Verifique se `OPENAI_API_KEY` está configurada
-2. No Vercel, confirme que a variável está associada aos ambientes corretos (Production, Preview, Development)
-3. Redeploie o projeto
-4. Aguarde 1-2 minutos para a alteração surtir efeito
+## Endpoint de saúde
 
-### Erro: "A chave de API não está configurada corretamente"
+O projeto expõe:
 
-**Causa:** Chave de API inválida, expirada ou não autorizada.
+```txt
+GET /api/mentor-health
+```
 
-**Solução:**
-1. Acesse https://platform.openai.com/api-keys
-2. Verifique se a chave ainda existe e está ativa
-3. Se necessário, gere uma nova chave
-4. Atualize no `.env.local` (local) e na Vercel (produção)
-5. Redeploie
+Ele:
 
-### Erro: "Muitas requisições. Aguarde um momento"
+- verifica se `OPENAI_API_KEY` existe
+- tenta listar modelos da OpenAI
+- retorna `ok`, `model` e erros conhecidos
 
-**Causa:** Rate limiting da OpenAI (429 error).
+## Fluxos de IA ativos
 
-**Solução:**
-- Aguarde alguns minutos antes de tentar novamente
-- Considera fazer upgrade da conta OpenAI para aumentar limites
-- Implemente caching de respostas (em versões futuras)
+### Chat
 
-### Erro: "O servidor de IA está temporariamente fora"
+Arquivo:
 
-**Causa:** Servidor OpenAI indisponível ou erro 500.
+- `src/ai/flows/chat-with-mentor.ts`
 
-**Solução:**
-- Verifique o status em https://status.openai.com
-- Aguarde alguns minutos
-- Tente novamente
+Usado em:
 
-### Erro: "A resposta levou muito tempo"
+- `src/components/dashboard/ai-mentor-chat.tsx`
 
-**Causa:** Timeout de 30 segundos na comunicação com OpenAI.
+Comportamento atual:
 
-**Solução:**
-- Reduzir `max_tokens` no código (atualmente 512)
-- Tentar com uma mensagem mais curta
-- Verificar sua conexão com a internet
-- Aguardar em horários de menor uso da API
+- usa `OPENAI_API_KEY`
+- usa `NEURODO_MODEL` ou `gpt-4o-mini`
+- timeout de `30s`
+- retry no frontend para alguns erros
+- não persiste histórico no Firestore
 
-## Verificação Local
+Contexto real enviado ao chat:
 
-Para testar localmente:
+- `users/{uid}/mentorDo/profile`
+- milestones ativos
+- sumário de `timesheets`
+
+### Mentor de projetos
+
+Arquivo:
+
+- `src/ai/flows/mentor-projects.ts`
+
+Usado em:
+
+- `mentor-projects.tsx`
+- `mentor-sos-button.tsx`
+
+Modos:
+
+- `lost`
+- `celebrate`
+- `strategic`
+
+Entradas principais:
+
+- lista de projetos
+- estabilidade dos projetos
+- quantidade de projetos de execução
+- receita estimada
+
+### Sugestões de tarefa
+
+Arquivo:
+
+- `src/ai/flows/provide-context-aware-assistance.ts`
+
+Usado em:
+
+- `task-suggestions.tsx`
+
+Observação:
+
+- a UI atual ainda usa projeto estático de `src/lib/data.ts` para compor o pedido
+
+### Revisão noturna
+
+Arquivo:
+
+- `src/ai/flows/generate-nightly-review.ts`
+
+Usado em:
+
+- `evening-review-form.tsx`
+
+Saída:
+
+- análise do dia
+- padrão de energia
+- até 3 tarefas sugeridas para amanhã
+- nota motivacional
+
+### Energia
+
+Arquivo:
+
+- `src/ai/flows/analyze-energy-patterns.ts`
+
+Usado em:
+
+- `energy-dashboard.tsx`
+
+### Roadmap
+
+Arquivo:
+
+- `src/ai/flows/breakdown-milestone.ts`
+
+Usado em:
+
+- `roadmap-view.tsx`
+- `milestone-detail-view.tsx`
+
+### Equipe
+
+Arquivos:
+
+- `conduct-profile-interview.ts`
+- `generate-behavioral-profile.ts`
+- `generate-feedback-session.ts`
+- `generate-pdi.ts`
+- `generate-text-flow.ts`
+
+Usados em:
+
+- questionário público
+- perfil do membro
+- feedback
+- PDI
+- assistências no formulário da equipe
+
+## Fontes de contexto do MentorDo
+
+### Fonte usada pelo chat flutuante
+
+```txt
+users/{uid}/mentorDo/profile
+```
+
+### Fonte usada pela página Sobre Mim
+
+```txt
+users/{uid}/profile/mentordo
+```
+
+## Inconsistência importante
+
+Hoje existem duas fontes de perfil para o MentorDo.
+
+Impacto:
+
+- a página `Sobre Mim` não atualiza automaticamente o contexto que o chat usa
+- o app ainda não tem uma única fonte de verdade para contexto pessoal da IA
+
+## Configuração admin atual
+
+A tela:
+
+```txt
+/dashboard/admin/mentor-do
+```
+
+grava em:
+
+```txt
+mentorDoConfig/default
+```
+
+Campos salvos:
+
+- `defaultPrompt`
+- `defaultModel`
+- `welcomeMessage`
+- `helpContacts`
+
+## Limitação importante
+
+Os fluxos atuais não leem `mentorDoConfig/default`.
+
+Na prática:
+
+- a tela admin existe
+- mas os prompts usados pela IA continuam hardcoded nos arquivos dos flows
+
+## Troubleshooting real
+
+### 1. Verificar health endpoint
 
 ```bash
-# 1. Crie/atualize .env.local
-echo "OPENAI_API_KEY=sk-SEU_VALOR_AQUI" > .env.local
-
-# 2. Inicie o servidor
-npm run dev
-
-# 3. Abra http://localhost:3000/dashboard
-# 4. Teste o chat do Mentor IA
-
-# 5. Verifique logs no console do servidor
-# Deve ver logs tipo: "[AI Mentor Request: ...]"
+curl http://localhost:3000/api/mentor-health
 ```
 
-## Logs Detalhados
+### 2. Verificar variáveis no servidor
 
-O sistema agora gera logs estruturados. Para DEBUG:
+Se `OPENAI_API_KEY` faltar, os fluxos falham em tempo de execução.
 
-**No Backend (Server Actions):**
-```
-[AI Mentor Request: mentor-XXX] Iniciando processamento
-[AI Mentor Request: mentor-XXX] Enviando para OpenAI
-[AI Mentor Success: mentor-XXX] Resposta obtida com sucesso
-[AI Mentor Error: mentor-XXX] Erro na API OpenAI
-```
+### 3. Verificar timeout no chat
 
-**No Frontend (Browser Console):**
-```
-[Retry 0/3] Erro no chat: ...
-[AI Mentor Chat] Erro durante requisição: {...}
-```
+O chat do MentorDo usa timeout de `30s`.
 
-## Checklist de Verificação
+Erros tratados:
 
-- [ ] `OPENAI_API_KEY` está configurada no `.env.local`
-- [ ] A chave é válida em https://platform.openai.com/api-keys
-- [ ] Em Produção: variáveis configuradas na Vercel
-- [ ] Servidor foi redeploiado após mudanças de variáveis
-- [ ] Aguardou 1-2 minutos para refletir as mudanças
-- [ ] Console do servidor mostra logs de inicialização sem erro
-- [ ] Chat consegue enviar/receber mensagens
+- `INIT_ERROR`
+- `VALIDATION_ERROR`
+- `EMPTY_MESSAGE`
+- `TIMEOUT`
+- `INVALID_API_KEY`
+- `RATE_LIMIT`
+- `OPENAI_SERVER_ERROR`
+- `UNKNOWN_ERROR`
 
-## Limitações Conhecidas
+### 4. Verificar histórico de feedback/PDI
 
-- Timeout de 30 segundos para respostas
-- Máximo de 512 tokens por resposta
-- Histórico não é persistido entre sessões
-- Vector Store ainda não integrado totalmente
+Hoje existe divergência de leitura/escrita:
 
-## Próximas Melhorias
+- escrita pelo servidor em coleções top-level
+- leitura da UI em subcoleções do usuário
 
-- [ ] Persistência de histórico em Firestore
-- [ ] Caching de respostas frequentes
-- [ ] Integração completa com Vector Store
-- [ ] Suporte a embeddings customizados
-- [ ] Rate limiting local para evitar abuse
+Se o histórico “sumir”, esse é o primeiro ponto para checar.
 
-## Suporte
+## O que não está implementado no fluxo atual
 
-Se continuar com erros:
-
-1. Verifique todos os pontos acima
-2. Consulte logs no Vercel: **Deployments** → select deployment → **Runtime logs**
-3. Verifique status da OpenAI em https://status.openai.com
-4. Entre em contato com o time de desenvolvimento
+- Vector Store
+- embeddings
+- leitura da configuração admin pelos flows
+- persistência do histórico do chat do MentorDo
+- fonte única de perfil do usuário

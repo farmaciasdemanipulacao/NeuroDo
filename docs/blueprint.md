@@ -1,30 +1,243 @@
-# **App Name**: NeuroDO
+# Blueprint Técnico Atual
 
-## Core Features:
+Leitura arquitetural do projeto com base no código atual.
 
-- Project Dashboard: A central dashboard providing a visual overview of the 5 key projects, displaying progress towards goals and current status. Implements a visual design for extreme chunking with no more than three items visible at any time. Mini-cards act as a navigation element to more detailed project screens.
-- Energy Level Check-in: A daily check-in that assesses the user's energy levels and suggests suitable tasks based on the energy level. UI reflects this information, modifying itself appropriately to make the user feel understood.
-- AI Mentor Integration: An integrated AI mentor using the Gemini API via Genkit, providing context-aware assistance, breaking down tasks, offering suggestions, and helping with decision-making, tailored to the user's neurodivergent needs and energy levels. AI serves as a tool to help make decisions with various filters implemented in the backend.
-- Focus Timer: An adaptive Pomodoro timer that minimizes distractions, promotes deep work, and provides a calming visual aid, automatically adjusting work and break intervals according to the project and context.
-- Idea Catcher: A quick capture feature for new ideas, allowing the user to jot down thoughts without derailing focus. Ideas will be classified by the tool to decide whether to store in a '2027' bucket.
-- Metrics and Achievements: A system to track progress, celebrate milestones, and provide evidence of competence, helping to combat limiting beliefs and boost motivation.
-- Evening Review: A nightly ritual screen with three simple prompts: "What did I accomplish today?" (celebration), "Where did I get stuck?" (identify blockers), and "Top 3 for tomorrow" (next day prep). Critical for ADHD closure and next-day readiness.
-- Streak System: A visual counter showing consecutive days of progress, providing structured dopamine through visible momentum. Displays prominently on dashboard.
-- Shiny Object Filter: Before saving any idea, a modal asks: "Does this solve a problem for one of the 5 projects?" and "Does this generate revenue by Dec 2026?". If no to both: automatically routes to 2027 bucket with confirmation message.
-- Data Persistence: Data, tasks, energy levels, thoughts and chat data is stored to Firestore, the NoSQL cloud database for Firebase
+## 1. Estrutura de aplicação
 
-## Style Guidelines:
+### App Router
 
-- Primary color: Vivid Green (`#22C55E`), used to represent high energy, growth, and positive momentum, embodying a vibrant and motivating atmosphere.
-- Background color: Deep, dark Blue-Gray (`#0A0A0F`), reduces visual fatigue and enhances focus by minimizing distractions, creating a concentrated environment.
-- Accent color: Warm Amber (`#F59E0B`), strategically used for alerts and CTAs.
-- Project colors: Each of the 5 projects has a distinct identity color: ENVOX: Solid Blue (`#3B82F6`) - stability, cash base; FARMÁCIAS: Purple (`#8B5CF6`) - innovation, growth; GERAÇÃO PJ: Orange (`#F97316`) - energy, communication; FELIZMENTE: Pink (`#EC4899`) - wellness, humanization; INFLUENCERS: Teal (`#14B8A6`) - connections, expansion.
-- Energy indicator colors: Green (`#22C55E`) for high energy 7-10, Amber (`#F59E0B`) for medium 4-6, Red (`#EF4444`) for low 1-3, Gray (`#6B7280`) for maintenance mode 0.
-- Body and headline font: 'Inter' (sans-serif) provides a modern, readable interface, suitable for on-screen reading.
-- Maximum of 3 actionable items visible at any time to prevent decision paralysis.
-- Generous spacing between elements (ADHD needs visual breathing room).
-- Large touch targets for primary actions.
-- Dark theme as default (non-negotiable for focus).
-- A minimalist layout with high contrast facilitates visual processing and reduces cognitive load.
-- Subtle animations and transitions provide dopamine feedback to celebrate milestones.
-- Use custom iconography which is symbolic of both ADHD and entrepreneurship.
+O app usa `src/app/` com:
+
+- layout raiz em `src/app/layout.tsx`
+- dashboard protegido em `src/app/dashboard/layout.tsx`
+- páginas modulares por domínio
+- rota pública de questionário
+- rota de health check da OpenAI
+
+### Providers
+
+Na raiz:
+
+- `FirebaseClientProvider`
+- `AppProvider`
+- `Toaster`
+
+No dashboard:
+
+- `DashboardDataProvider`
+- `SidebarProvider`
+
+## 2. Camada de estado
+
+### FirebaseProvider
+
+Responsável por:
+
+- inicializar Auth e Firestore
+- ouvir `onAuthStateChanged`
+- hidratar `appUser` via `users/{uid}`
+- expor `useUser`, `useFirestore`, `useAuth`
+
+### AppProvider
+
+Responsável por:
+
+- `energyLevel`
+- timer de foco
+- persistência local do timer
+- criação de `focus_sessions`
+
+### DashboardDataProvider
+
+Centraliza listeners compartilhados para:
+
+- `tasks`
+- `goals`
+- `user_stats`
+
+Objetivo:
+
+- evitar listeners duplicados no dashboard
+
+## 3. Acesso a dados
+
+### Hooks em tempo real
+
+O projeto usa wrappers próprios:
+
+- `useCollection`
+- `useDoc`
+- `useMemoFirebase`
+
+Eles fazem:
+
+- subscribe em tempo real
+- controle de loading
+- propagação de erro de permissão
+
+### Escrita
+
+Há duas estratégias:
+
+- escrita direta com `setDoc` e similares
+- helpers non-blocking:
+  - `setDocumentNonBlocking`
+  - `addDocumentNonBlocking`
+  - `updateDocumentNonBlocking`
+  - `deleteDocumentNonBlocking`
+
+## 4. Domínios principais
+
+### Execução diária
+
+- tasks
+- timesheets
+- active task timer
+- focus sessions
+
+### Planejamento
+
+- goals
+- milestones
+- subtasks
+- reviews
+
+### Gestão
+
+- projects
+- delegations
+- team
+- documents
+- revenue
+
+### IA
+
+- chat
+- mentor de projetos
+- análise de energia
+- revisão noturna
+- team intelligence
+
+## 5. Camada de IA
+
+Todos os flows em `src/ai/flows/` são `use server`.
+
+Padrão dominante:
+
+- `OpenAI` direto
+- prompt fixo no arquivo
+- `zod` para input/output
+- retorno estruturado ou erro controlado
+
+Não há hoje:
+
+- orquestração central da IA
+- config única compartilhada entre flows
+- leitura do `mentorDoConfig/default` pelos flows
+
+## 6. Padrões de UX
+
+### Persistência
+
+- Firestore para dados principais
+- `localStorage` para estado do timer de foco
+
+### Tempo real
+
+- tarefas, metas, stats, documentos, equipe e outros domínios usam listeners Firestore
+
+### Feedback
+
+- toasts em quase todos os fluxos de escrita
+- fallback visual para loading
+- error boundaries para problemas Firebase e MentorDo
+
+## 7. Tensões arquiteturais atuais
+
+### Modelo de projeto duplicado
+
+Convivem:
+
+- `Project`
+- `ManagedProject`
+
+Consequência:
+
+- parte do app opera em cima do modelo novo
+- parte ainda usa legado e `src/lib/data.ts`
+
+### Perfil do MentorDo duplicado
+
+Convivem:
+
+- `users/{uid}/mentorDo/profile`
+- `users/{uid}/profile/mentordo`
+
+Consequência:
+
+- contexto pessoal da IA não está consolidado
+
+### Histórico desalinhado
+
+Backend salva em:
+
+- `feedback_sessions`
+- `pdi_history`
+
+UI lê em:
+
+- `users/{uid}/feedback_sessions`
+- `users/{uid}/pdi_history`
+
+### Build permissivo
+
+`next.config.ts` ignora lint e tipos no build.
+
+Consequência:
+
+- o deploy pode passar sem que a base esteja tecnicamente saudável
+
+## 8. Blueprint real do fluxo de dados
+
+### Exemplo: concluir tarefa
+
+1. UI em `daily-plan-view.tsx`
+2. transação no Firestore
+3. atualiza:
+   - `tasks/{taskId}`
+   - `user_stats/data`
+   - `goals/{goalId}` se vinculada
+4. `DashboardDataProvider` recebe snapshot novo
+5. widgets reagem automaticamente
+
+### Exemplo: revisão noturna
+
+1. UI coleta tarefas do dia
+2. chama `generate-nightly-review`
+3. usuário aceita/edita sugestões
+4. salva review em `reviews/{date}`
+5. cria tasks de amanhã em `tasks`
+
+### Exemplo: questionário de equipe
+
+1. cria `profile_questionnaires/{id}`
+2. membro responde em rota pública
+3. IA conduz entrevista
+4. IA gera perfil comportamental
+5. resultado volta para `team/{memberId}`
+
+## 9. Leitura final
+
+Arquiteturalmente, o projeto já tem um esqueleto forte:
+
+- domínios separados
+- camada própria de Firebase
+- flows de IA específicos por problema
+- dashboard com dados em tempo real
+
+O principal débito técnico hoje não é ausência de arquitetura, e sim falta de consolidação:
+
+- reduzir caminhos duplicados
+- eliminar legado estático
+- normalizar modelo de dados
+- restaurar saúde de tipagem e lint

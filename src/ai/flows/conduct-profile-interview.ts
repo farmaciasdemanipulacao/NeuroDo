@@ -1,20 +1,8 @@
 
 'use server';
 
-import OpenAI from 'openai';
 import { z } from 'zod';
-
-const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
-
-let openai: OpenAI | null = null;
-let initError: string | null = null;
-
-if (!apiKey) {
-  initError = 'A variável de ambiente OPENAI_API_KEY não está definida.';
-} else {
-  openai = new OpenAI({ apiKey });
-}
+import { openai, initError, model } from '@/ai/openai-client';
 
 const SYSTEM_PROMPT = `Você é um especialista em análise de perfil comportamental, treinado nas metodologias DISC, MBTI, e Eneagrama. Sua missão é conduzir uma entrevista conversacional e amigável com um membro da equipe para descobrir seus padrões de comportamento no trabalho.
 
@@ -49,9 +37,10 @@ const ConductProfileInterviewOutputSchema = z.object({
 
 export type ConductProfileInterviewOutput = z.infer<typeof ConductProfileInterviewOutputSchema>;
 
-export async function conductProfileInterview(input: ConductProfileInterviewInput): Promise<ConductProfileInterviewOutput> {
+export async function conductProfileInterview(input: ConductProfileInterviewInput): Promise<{ response?: string; error?: string; errorCode?: string }> {
   if (!openai || initError) {
-    throw new Error(`Erro de configuração do servidor: ${initError}`);
+    console.error('OpenAI Init Error:', initError);
+    return { error: `Configuração do servidor: ${initError}`, errorCode: 'INIT_ERROR' };
   }
   const validatedInput = ConductProfileInterviewInputSchema.safeParse(input);
   if (!validatedInput.success) {
@@ -61,8 +50,8 @@ export async function conductProfileInterview(input: ConductProfileInterviewInpu
   const { history, userName } = validatedInput.data;
   const finalSystemPrompt = `${SYSTEM_PROMPT}\nO nome do usuário que você está entrevistando é ${userName}.`;
 
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: finalSystemPrompt },
+  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    { role: 'system', content: finalSystemPrompt },
     ...history.map(msg => ({ role: msg.role, content: msg.content })),
   ];
   
@@ -77,15 +66,16 @@ export async function conductProfileInterview(input: ConductProfileInterviewInpu
     const responseMessage = response.choices[0]?.message?.content;
 
     if (typeof responseMessage !== 'string' || responseMessage.trim() === '') {
-        return {
-            response: "Obrigado(a)! Agradeço seu tempo.",
-        };
+        return { response: 'Obrigado(a)! Agradeço seu tempo.' };
     }
 
     return { response: responseMessage };
 
   } catch (error: any) {
-    console.error("Erro na comunicação com a API da OpenAI:", error);
-    throw new Error(`Desculpe, tive um problema técnico momentâneo. Detalhes: ${error.message}`);
+    console.error('Erro na comunicação com a API da OpenAI:', error);
+    const status = error?.status ?? error?.response?.status;
+    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
+    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
+    return { error: `Desculpe, tive um problema técnico momentâneo. Detalhes: ${error?.message ?? 'desconhecido'}`, errorCode: 'OPENAI_ERROR' };
   }
 }

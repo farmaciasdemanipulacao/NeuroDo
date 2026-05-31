@@ -95,7 +95,13 @@ export default function QuestionnairePage() {
         .map(([question, answer]) => `Pergunta: ${question}\nResposta: ${answer}`)
         .join('\n\n');
 
-      const profileData = await generateBehavioralProfile({ responses: responsesString });
+      const profileResponse = await generateBehavioralProfile({ responses: responsesString });
+
+      if (profileResponse.error) {
+        throw new Error(profileResponse.error);
+      }
+
+      const profileData = profileResponse.result as any;
 
       // 3. Save the generated profile to Firestore
       const profileText = `Resumo: ${profileData.profileSummary}\n\nComo Delegar: ${profileData.howToDelegate}\n\nComo Dar Feedback: ${profileData.howToGiveFeedback}\n\nMotivadores: ${profileData.motivators}\n\nSugestões de Reconhecimento: ${profileData.recognitionSuggestions}`;
@@ -151,10 +157,14 @@ setInput('');
         userName: teamMember?.name || 'usuário'
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: result.response }]);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: result.response ?? '' }]);
       
       // Check if the interview is over
-      if (result.response.toLowerCase().includes(INTERVIEW_END_PHRASE.toLowerCase())) {
+      if (result.response && result.response.toLowerCase().includes(INTERVIEW_END_PHRASE.toLowerCase())) {
         await handleFinishInterview();
       }
     } catch (error: any) {

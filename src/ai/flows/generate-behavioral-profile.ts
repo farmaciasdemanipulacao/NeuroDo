@@ -6,22 +6,9 @@
  * It is a "pure" function that receives text and returns a structured JSON object.
  */
 
-import OpenAI from 'openai';
 import { z } from 'zod';
 import { BehavioralProfileOutputSchema, type BehavioralProfileOutput } from '@/lib/types';
-
-// --- OpenAI Client Configuration ---
-const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
-
-let openai: OpenAI | null = null;
-let initError: string | null = null;
-
-if (!apiKey) {
-  initError = 'A variável de ambiente OPENAI_API_KEY não está definida.';
-} else {
-  openai = new OpenAI({ apiKey });
-}
+import { openai, initError, model } from '@/ai/openai-client';
 
 // --- System Prompt for Behavioral Analysis ---
 const SYSTEM_PROMPT = `Você é um Psicoanalista Organizacional e especialista em comportamento humano, com profundo conhecimento em DISC, MBTI, Eneagrama e Linguagens do Amor. Sua função é analisar as respostas de um questionário de um membro da equipe de Gustavo, um CEO com TDAH, e gerar um perfil acionável para ele.
@@ -41,10 +28,10 @@ const GenerateBehavioralProfileInputSchema = z.object({
 export type GenerateBehavioralProfileInput = z.infer<typeof GenerateBehavioralProfileInputSchema>;
 
 // --- Main Function ---
-export async function generateBehavioralProfile(input: GenerateBehavioralProfileInput): Promise<BehavioralProfileOutput> {
+export async function generateBehavioralProfile(input: GenerateBehavioralProfileInput): Promise<{ result?: BehavioralProfileOutput; error?: string; errorCode?: string }> {
   if (!openai || initError) {
-    console.error("OpenAI Init Error:", initError);
-    throw new Error(`Server Configuration Error: ${initError}`);
+    console.error('OpenAI Init Error:', initError);
+    return { error: `Configuração do servidor: ${initError}`, errorCode: 'INIT_ERROR' };
   }
 
   const validatedInput = GenerateBehavioralProfileInputSchema.safeParse(input);
@@ -73,32 +60,35 @@ export async function generateBehavioralProfile(input: GenerateBehavioralProfile
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
-      response_format: { type: "json_object" },
+      response_format: { type: 'json_object' },
       temperature: 0.3,
     });
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
-      throw new Error("A API da OpenAI não retornou conteúdo.");
+      console.error('OpenAI retornou conteúdo vazio');
+      return { error: 'A API da OpenAI não retornou conteúdo.', errorCode: 'EMPTY_RESPONSE' };
     }
-    
-    // Using safeParse for robust validation
-    const validationResult = BehavioralProfileOutputSchema.safeParse(JSON.parse(rawOutput));
-    
-    if (!validationResult.success) {
-        console.error("OpenAI output validation failed", validationResult.error.flatten());
-        console.log("Raw AI Output that failed:", rawOutput);
-        throw new Error("A resposta da IA não seguiu o formato esperado. A estrutura do JSON está incorreta.");
+
+    try {
+      const parsed = JSON.parse(rawOutput);
+      const validationResult = BehavioralProfileOutputSchema.safeParse(parsed);
+      if (!validationResult.success) {
+        console.error('OpenAI output validation failed', validationResult.error.flatten());
+        console.log('Raw AI Output that failed:', rawOutput);
+        return { error: 'A resposta da IA não seguiu o formato esperado.', errorCode: 'INVALID_FORMAT' };
+      }
+      return { result: validationResult.data };
+    } catch (err: any) {
+      console.error('Falha ao parsear resposta da IA:', err);
+      return { error: 'A resposta da IA não era um JSON válido.', errorCode: 'INVALID_JSON' };
     }
-    
-    return validationResult.data;
 
   } catch (error: any) {
-    console.error("Erro ao gerar perfil comportamental:", error);
-    // Re-throw a more specific error based on the type of failure
-    if (error instanceof z.ZodError || error instanceof SyntaxError) {
-       throw new Error(`Falha na análise do perfil: A resposta da IA não era um JSON válido ou não seguiu o schema: ${error.message}`);
-    }
-    throw new Error(`Falha na análise do perfil: ${error.message}`);
+    console.error('Erro ao gerar perfil comportamental:', error);
+    const status = error?.status ?? error?.response?.status;
+    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
+    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
+    return { error: `Falha na análise do perfil: ${error?.message ?? 'erro desconhecido'}`, errorCode: 'OPENAI_ERROR' };
   }
 }

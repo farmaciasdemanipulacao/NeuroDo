@@ -226,20 +226,25 @@ export default function TeamMemberPage() {
     const handleGenerateFeedback = async (inputs: { positivePoint: string, improvementPoint: string, relatedGoal: string }) => {
         if (!member || !user) return;
         setIsGeneratingFeedback(true);
-        try {
-          const script = await generateFeedbackSession({
-            collaboratorName: member.name,
-            behavioralProfile: member.profileResults || 'Não definido',
-            memberId: member.id,
-            userId: user.uid,
-            ...inputs
-          });
-          setGeneratedScript(script);
-        } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: error.message });
-        } finally {
-          setIsGeneratingFeedback(false);
-        }
+                try {
+                    const res = await generateFeedbackSession({
+                        collaboratorName: member.name,
+                        behavioralProfile: member.profileResults || 'Não definido',
+                        memberId: member.id,
+                        userId: user.uid,
+                        ...inputs
+                    });
+
+                    if (res.error) {
+                        toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: res.error });
+                    } else {
+                        setGeneratedScript(res.result ?? null);
+                    }
+                } catch (error: any) {
+                    toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: error.message });
+                } finally {
+                    setIsGeneratingFeedback(false);
+                }
     };
 
     const closeFeedbackModals = () => {

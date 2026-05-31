@@ -7,7 +7,6 @@
  * It also saves the generated script to a history collection.
  */
 
-import OpenAI from 'openai';
 import { z } from 'zod';
 import { 
     GenerateFeedbackSessionInputSchema, 
@@ -18,18 +17,7 @@ import {
 import { getAdminFirestore } from '@/firebase/admin-init';
 
 
-// --- OpenAI Client Configuration ---
-const apiKey = process.env.OPENAI_API_KEY;
-const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
-
-let openai: OpenAI | null = null;
-let initError: string | null = null;
-
-if (!apiKey) {
-  initError = 'A variável de ambiente OPENAI_API_KEY não está definida.';
-} else {
-  openai = new OpenAI({ apiKey });
-}
+import { openai, initError, model } from '@/ai/openai-client';
 
 // --- System Prompt for Feedback Session Generation ---
 const SYSTEM_PROMPT = `Você é uma Diretora de RH e coach de comunicação, especialista em liderança empática e comunicação não-violenta (CNV). Sua missão é criar um roteiro para uma sessão de feedback para Gustavo, um CEO com TDAH, conversar com um de seus colaboradores.
@@ -49,9 +37,10 @@ REGRAS DE OURO:
 
 
 // --- Main Function ---
-export async function generateFeedbackSession(input: GenerateFeedbackSessionInput & { memberId: string, userId: string }): Promise<GenerateFeedbackSessionOutput> {
+export async function generateFeedbackSession(input: GenerateFeedbackSessionInput & { memberId: string, userId: string }): Promise<{ result?: GenerateFeedbackSessionOutput; error?: string; errorCode?: string }> {
   if (!openai || initError) {
-    throw new Error(`Server Configuration Error: ${initError}`);
+    console.error('OpenAI Init Error:', initError);
+    return { error: `Configuração do servidor: ${initError}`, errorCode: 'INIT_ERROR' };
   }
 
   const validatedInput = GenerateFeedbackSessionInputSchema.extend({
@@ -84,24 +73,25 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
-      response_format: { type: "json_object" },
+      response_format: { type: 'json_object' },
       temperature: 0.4,
     });
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
-      throw new Error("A API da OpenAI não retornou conteúdo.");
-    }
-    
-    const validationResult = GenerateFeedbackSessionOutputSchema.safeParse(JSON.parse(rawOutput));
-    
-    if (!validationResult.success) {
-        console.error("OpenAI output validation failed", validationResult.error.flatten());
-        console.log("Raw AI Output that failed:", rawOutput);
-        throw new Error("A resposta da IA não seguiu o formato JSON esperado.");
+      console.error('OpenAI retornou conteúdo vazio');
+      return { error: 'A API da OpenAI não retornou conteúdo.', errorCode: 'EMPTY_RESPONSE' };
     }
 
-    const generatedScript = validationResult.data;
+      const parsed = JSON.parse(rawOutput);
+      const validationResult = GenerateFeedbackSessionOutputSchema.safeParse(parsed);
+      if (!validationResult.success) {
+        console.error('OpenAI output validation failed', validationResult.error.flatten());
+        console.log('Raw AI Output that failed:', rawOutput);
+        return { error: 'A resposta da IA não seguiu o formato JSON esperado.', errorCode: 'INVALID_FORMAT' };
+      }
+
+      const generatedScript = validationResult.data;
 
     // Save to history
     try {
@@ -119,13 +109,13 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
         // We just log the error.
     }
     
-    return generatedScript;
+    return { result: generatedScript };
 
   } catch (error: any) {
-    console.error("Erro ao gerar roteiro de feedback:", error);
-    if (error instanceof z.ZodError || error instanceof SyntaxError) {
-       throw new Error(`Falha na análise do roteiro: A resposta da IA não era um JSON válido ou não seguiu o schema: ${error.message}`);
-    }
-    throw new Error(`Falha na geração do roteiro: ${error.message}`);
+    console.error('Erro ao gerar roteiro de feedback:', error);
+    const status = error?.status ?? error?.response?.status;
+    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
+    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
+    return { error: `Falha na geração do roteiro: ${error?.message ?? 'erro desconhecido'}`, errorCode: 'OPENAI_ERROR' };
   }
 }

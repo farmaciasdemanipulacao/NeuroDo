@@ -92,7 +92,6 @@ export async function classifyAndRouteIdea(
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
-      response_format: { type: "json_object" },
       temperature: 0.2,
     });
 

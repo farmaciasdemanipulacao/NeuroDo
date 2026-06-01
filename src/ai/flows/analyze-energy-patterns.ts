@@ -176,7 +176,6 @@ Retorne APENAS o objeto JSON com os campos: overallPattern, insights (3-5 itens 
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
       temperature: 0.4,
     });
 

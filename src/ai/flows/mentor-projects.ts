@@ -194,7 +194,6 @@ export async function mentorProjects(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
       temperature: 0.7,
     });
 

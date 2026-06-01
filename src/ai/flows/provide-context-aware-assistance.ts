@@ -101,7 +101,6 @@ export async function provideContextAwareAssistance(
       ],
       temperature: 0.5,
       max_tokens: 550,
-      response_format: { type: 'json_object' },
     });
 
     const rawOutput = response.choices[0]?.message?.content?.trim();

@@ -129,7 +129,6 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       ],
       temperature: 0.6,
       max_tokens: 1200,
-      response_format: { type: 'json_object' },
     });
 
     const rawOutput = response.choices[0]?.message?.content?.trim();

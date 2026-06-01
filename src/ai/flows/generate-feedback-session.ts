@@ -73,7 +73,6 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
-      response_format: { type: 'json_object' },
       temperature: 0.4,
     });
 

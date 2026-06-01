@@ -88,9 +88,18 @@ try {
         console.log('node_modules/openai/src files:', srcFiles.join(', '));
         const tsconfigPath = path.join(candidateSrc, 'tsconfig.json');
         if (fs.existsSync(tsconfigPath)) {
-          console.log('--- begin node_modules/openai/src/tsconfig.json ---');
-          console.log(fs.readFileSync(tsconfigPath, 'utf8'));
-          console.log('--- end node_modules/openai/src/tsconfig.json ---');
+            console.log('--- begin node_modules/openai/src/tsconfig.json ---');
+            console.log(fs.readFileSync(tsconfigPath, 'utf8'));
+            console.log('--- end node_modules/openai/src/tsconfig.json ---');
+
+            // Attempt to rename the file to avoid TypeScript picking it up during build.
+            try {
+              const disabledPath = tsconfigPath + '.disabled-by-prebuild';
+              fs.renameSync(tsconfigPath, disabledPath);
+              console.log('Renamed openai src tsconfig to:', disabledPath);
+            } catch (renameErr) {
+              console.error('Failed to rename openai src tsconfig:', renameErr.message);
+            }
         }
       } catch (e) {
         console.error('Could not inspect node_modules/openai/src:', e.message);

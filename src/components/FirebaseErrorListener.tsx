@@ -1,68 +1,53 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import React, { useState, useEffect, useContext } from "react";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseContext } from "@/firebase/provider";
+
+// Simple synchronous string hash (FNV-1a 32-bit) — works in browser and server
+function hashString(s: string) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+}
 
 /**
- * An invisible component that listens for globally emitted 'permission-error' events.
- * It throws any received error to be caught by Next.js's global-error.tsx.
+ * FirebaseErrorListener centraliza a captura de erros de Firebase (emitter e contexto)
+ * e registra um "digest" no console para facilitar o rastreamento do erro 500 do SSR.
  */
 export function FirebaseErrorListener() {
-  // Use the specific error type for the state for type safety.
-  const [error, setError] = useState<FirestorePermissionError | null>(null);
+  const { toast } = useToast();
+  const ctx = useContext(FirebaseContext);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // The callback now expects a strongly-typed error, matching the event payload.
-    const handleError = (error: FirestorePermissionError) => {
-      // Set error in state to trigger a re-render.
-      setError(error);
-    };
-
-    // The typed emitter will enforce that the callback for 'permission-error'
-    // matches the expected payload type (FirestorePermissionError).
-    errorEmitter.on('permission-error', handleError);
-
-    // Unsubscribe on unmount to prevent memory leaks.
-    return () => {
-      errorEmitter.off('permission-error', handleError);
-    };
+    const handleError = (err: FirestorePermissionError) => setError(err);
+    errorEmitter.on("permission-error", handleError);
+    return () => errorEmitter.off("permission-error", handleError);
   }, []);
 
-  // On re-render, if an error exists in state, throw it.
+  useEffect(() => {
+    if (ctx?.userError) setError(ctx.userError as Error);
+  }, [ctx?.userError]);
+
   if (error) {
+    const payload = `${error.message}\n${error.stack ?? ""}`;
+    const digest = hashString(payload);
+    try {
+      console.error(`[Firebase Listener] Digest: ${digest}`, error);
+      toast({ variant: "destructive", title: `Erro de Firebase (Digest ${digest})`, description: error.message });
+    } catch (e) {
+      console.error("[Firebase Listener] Falha ao mostrar toast:", e);
+    }
+
+    // Throw to let Next.js capture the error in its error boundary and surface the digest.
     throw error;
   }
 
-  // This component renders nothing.
   return null;
 }
-import React, { useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { FirebaseContext } from '@/firebase/provider';
-import { createHash } from 'crypto';
-
-export const FirebaseErrorListener: React.FC = () => {
-  const { toast } = useToast();
-  const ctx = React.useContext(FirebaseContext);
-
-  useEffect(() => {
-    if (!ctx) return;
-    if (ctx.userError) {
-      try {
-        const payload = String(ctx.userError.message || '') + '\n' + String(ctx.userError.stack || '');
-        const digest = createHash('sha256').update(payload).digest('hex').slice(0, 12);
-        console.error(`[Firebase Listener] Digest: ${digest}`, ctx.userError);
-        toast({ variant: 'destructive', title: `Erro de Autenticação (Digest ${digest})`, description: ctx.userError.message });
-      } catch (logErr) {
-        console.error('[Firebase Listener] Falha ao computar digest:', logErr, ctx.userError);
-        toast({ variant: 'destructive', title: 'Erro de Autenticação', description: ctx.userError.message });
-      }
-
-      // Throw to let the Next.js error boundary capture and display digest in production
-      throw ctx.userError;
-    }
-  }, [ctx, toast]);
-
-  return null;
-};

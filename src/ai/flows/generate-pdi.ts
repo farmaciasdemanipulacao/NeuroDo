@@ -56,23 +56,37 @@ export type GeneratePDIInput = z.infer<typeof GeneratePDIInputSchema>;
 const GeneratePDIOutputSchema = z.object({
   pdi: z.string().describe('The generated Personal Development Plan in Markdown format.'),
 });
-export type GeneratePDIOutput = z.infer<typeof GeneratePDIOutputSchema>;
+
+export type GeneratePDIOutput = 
+  | { pdi: string; error?: never; errorCode?: never }
+  | { pdi?: never; error: string; errorCode: string };
 
 
 // --- Main Function ---
 export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIOutput> {
+  const requestId = `pdi-${Date.now()}`;
+  console.log(`[GeneratePDI:${requestId}] Iniciando. OpenAI pronto: ${!!openai}`);
+
   if (!openai || initError) {
-    throw new Error(`Server Configuration Error: ${initError}`);
+    const msg = initError || 'OpenAI não inicializado por motivo desconhecido.';
+    console.error(`[GeneratePDI:${requestId}] Erro de configuração:`, msg);
+    return { error: `Configuração do servidor: ${msg}`, errorCode: 'INIT_ERROR' };
   }
 
   const validatedInput = GeneratePDIInputSchema.safeParse(input);
   if (!validatedInput.success) {
-    throw new Error(`Invalid input: ${validatedInput.error.message}`);
+    console.warn(`[GeneratePDI:${requestId}] Entrada inválida:`, validatedInput.error.message);
+    return { error: 'Dados do membro inválidos.', errorCode: 'VALIDATION_ERROR' };
   }
 
   const { contextPrompt, memberId, userId } = validatedInput.data;
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
+    console.log(`[GeneratePDI:${requestId}] Chamando OpenAI.`);
+
     const response = await openai.chat.completions.create({
       model: model,
       messages: [
@@ -80,17 +94,20 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
         { role: 'user', content: contextPrompt }
       ],
       temperature: 0.5,
-      max_tokens: 500,
+      max_tokens: 800,
     });
+
+    clearTimeout(timeoutId);
     
     const pdiText = response.choices[0]?.message?.content;
-    if (!pdiText) {
-      throw new Error("A API da OpenAI não retornou um PDI.");
+    if (!pdiText || pdiText.trim() === '') {
+      console.warn(`[GeneratePDI:${requestId}] OpenAI retornou conteúdo vazio.`);
+      return { error: 'A IA não gerou um PDI. Tente novamente.', errorCode: 'EMPTY_RESPONSE' };
     }
 
     const trimmedPdi = pdiText.trim();
 
-    // Save to history
+    // Save to history (non-blocking)
     try {
         const firestore = getAdminFirestore();
         const historyRef = firestore.collection('pdi_history');
@@ -100,15 +117,39 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
             generatedAt: new Date().toISOString(),
             pdiContent: trimmedPdi,
         });
-    } catch (dbError) {
-        console.error("Failed to save PDI to history:", dbError);
-        // We don't re-throw here, as the primary function (generating the PDI) succeeded.
+        console.log(`[GeneratePDI:${requestId}] PDI salvo no Firestore.`);
+    } catch (dbError: any) {
+        console.warn(`[GeneratePDI:${requestId}] Falha ao salvar PDI no Firestore:`, dbError?.message);
+        // Não relança porque o PDI foi gerado com sucesso
     }
     
+    console.log(`[GeneratePDI:${requestId}] Sucesso. Tamanho: ${trimmedPdi.length} chars`);
     return { pdi: trimmedPdi };
 
   } catch (error: any) {
-    console.error("Erro ao gerar PDI:", error);
-    throw new Error(`Falha na geração do PDI: ${error.message}`);
+    clearTimeout(timeoutId);
+
+    if (error?.name === 'AbortError') {
+      console.error(`[GeneratePDI:${requestId}] Timeout (30s).`);
+      return { error: 'A geração de PDI demorou demais. Tente novamente.', errorCode: 'TIMEOUT' };
+    }
+
+    const status = error?.status ?? error?.response?.status;
+    console.error(`[GeneratePDI:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
+
+    if (status === 401) {
+      return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
+    }
+    if (status === 429) {
+      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
+    }
+    if (status === 500 || status === 503) {
+      return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
+    }
+
+    return {
+      error: `Erro ao gerar PDI (${error?.message ?? 'desconhecido'}). Verifique os logs.`,
+      errorCode: 'UNKNOWN_ERROR',
+    };
   }
 }

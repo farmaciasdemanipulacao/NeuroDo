@@ -69,18 +69,28 @@ const OutputSchema = z.object({
 
 export type GenerateNightlyReviewOutput = z.infer<typeof OutputSchema>;
 
+export type GenerateNightlyReviewResult =
+  | { ok: true; data: GenerateNightlyReviewOutput }
+  | { ok: false; error: string; errorCode: string };
+
 // --- Main Function ---
 
 export async function generateNightlyReview(
   input: GenerateNightlyReviewInput
-): Promise<GenerateNightlyReviewOutput> {
+): Promise<GenerateNightlyReviewResult> {
+  const requestId = `nightly-${Date.now()}`;
+  console.log(`[NightlyReview:${requestId}] Iniciando. OpenAI pronto: ${!!openai}`);
+
   if (!openai || initError) {
-    throw new Error(`Erro de configuração do servidor: ${initError}`);
+    const msg = initError || 'OpenAI não inicializado por motivo desconhecido.';
+    console.error(`[NightlyReview:${requestId}] Erro de configuração:`, msg);
+    return { ok: false, error: `Configuração do servidor: ${msg}`, errorCode: 'INIT_ERROR' };
   }
 
   const validated = InputSchema.safeParse(input);
   if (!validated.success) {
-    throw new Error(`Input inválido: ${validated.error.message}`);
+    console.warn(`[NightlyReview:${requestId}] Entrada inválida:`, validated.error.message);
+    return { ok: false, error: 'Dados da revisão inválidos.', errorCode: 'VALIDATION_ERROR' };
   }
 
   const { energyLevel, tasksCompleted, tasksTotal, tasksSummary, date, hasTasks } = validated.data;
@@ -120,7 +130,12 @@ Gere:
 Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, suggestedTasks, motivationalNote.`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
+    console.log(`[NightlyReview:${requestId}] Chamando OpenAI.`);
+
     const response = await openai.chat.completions.create({
       model,
       messages: [
@@ -131,12 +146,15 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       max_tokens: 1200,
     });
 
+    clearTimeout(timeoutId);
+
     const rawOutput = response.choices[0]?.message?.content?.trim();
     if (!rawOutput) {
-      throw new Error('A API da OpenAI não retornou conteúdo.');
+      console.warn(`[NightlyReview:${requestId}] OpenAI retornou conteúdo vazio.`);
+      return { ok: false, error: 'A IA não gerou uma revisão. Tente novamente.', errorCode: 'EMPTY_RESPONSE' };
     }
 
-    // Tentativas robustas de parsing: JSON direto, bloco JSON, ou parsing heurístico
+    // Tentativas robustas de parsing
     let parsed: any = null;
     const parseErrors: string[] = [];
 
@@ -147,7 +165,7 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       parseErrors.push(`direct-json: ${(err as Error).message}`);
     }
 
-    // 2) Extrair bloco JSON entre chaves e tentar parsear
+    // 2) Extrair bloco JSON entre chaves
     if (!parsed) {
       const jsonBlockMatch = rawOutput.match(/\{[\s\S]*\}/);
       if (jsonBlockMatch) {
@@ -159,17 +177,14 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       }
     }
 
-    // 3) Se ainda não parseou, procurar por um array de sugestões e construir um objeto
+    // 3) Heurística: procurar por linhas numeradas com tarefas
     if (!parsed) {
       try {
-        // Tentativa heurística: procurar linhas numeradas com tarefas
         const lines = rawOutput.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         const taskLines = lines.filter(l => /^\d+\.|^-\s|^•\s/.test(l));
         if (taskLines.length > 0) {
           const suggestedTasks: any[] = taskLines.slice(0, 3).map((l) => {
-            // remover marcador inicial
             const text = l.replace(/^\d+\.|^-\s|^•\s/, '').trim();
-            // heurística simples: procurar (Manhã|Tarde|Noite) e minutos
             const scheduledMatch = text.match(/(Manhã|Tarde|Noite)/i);
             const minutesMatch = text.match(/(\d+)\s?min/);
             const priority = /alta|prioridade alta|alta prioridade|importante/i.test(text)
@@ -198,25 +213,21 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       }
     }
 
-    // 4) Se parseou, mas keys podem ter nomes alternativos — normalizar
+    // 4) Normalizar nomes alternativos de chaves
     if (parsed) {
-      // normalizar nomes alternativos
       if (!parsed.suggestedTasks && parsed.suggestions) parsed.suggestedTasks = parsed.suggestions;
       if (!parsed.suggestedTasks && parsed.tasks) parsed.suggestedTasks = parsed.tasks;
       if (!parsed.dayAnalysis && parsed.analysis) parsed.dayAnalysis = parsed.analysis;
       if (!parsed.motivationalNote && parsed.note) parsed.motivationalNote = parsed.note;
 
-      // Se suggestedTasks for stringified JSON, tentar parsear
       if (typeof parsed.suggestedTasks === 'string') {
         try {
           parsed.suggestedTasks = JSON.parse(parsed.suggestedTasks);
         } catch (err) {
-          // não fatal — manter como está
           parseErrors.push(`string-suggestedTasks-parse: ${(err as Error).message}`);
         }
       }
 
-      // Coercionar cada sugestão para o shape esperado
       if (Array.isArray(parsed.suggestedTasks)) {
         parsed.suggestedTasks = parsed.suggestedTasks.slice(0, 3).map((t: any) => ({
           content: t.content || t.title || String(t).slice(0, 200),
@@ -228,18 +239,43 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       }
     }
 
-    // Validar e retornar ou lançar erro com detalhes para debug
+    // Validar resultado
     const validatedOutput = OutputSchema.safeParse(parsed || {});
     if (!validatedOutput.success) {
-      console.error('Output validation failed:', validatedOutput.error);
-      console.error('Raw model output:', rawOutput);
-      console.error('Parse attempts:', parseErrors);
-      throw new Error('O Mentor IA retornou um formato inesperado — verifique os logs do servidor e tente novamente.');
+      console.error(`[NightlyReview:${requestId}] Validação falhou:`, validatedOutput.error.flatten());
+      console.error(`[NightlyReview:${requestId}] Raw output:`, rawOutput);
+      console.error(`[NightlyReview:${requestId}] Parse attempts:`, parseErrors);
+      return { ok: false, error: 'A resposta da IA não seguiu o formato esperado. Tente novamente.', errorCode: 'INVALID_FORMAT' };
     }
 
-    return validatedOutput.data;
+    console.log(`[NightlyReview:${requestId}] Sucesso.`);
+    return { ok: true, data: validatedOutput.data };
+
   } catch (error: any) {
-    console.error('Error calling OpenAI:', error);
-    throw new Error(`Erro ao gerar revisão noturna: ${error.message ?? error}`);
+    clearTimeout(timeoutId);
+
+    if (error?.name === 'AbortError') {
+      console.error(`[NightlyReview:${requestId}] Timeout (30s).`);
+      return { ok: false, error: 'A revisão demorou demais. Tente novamente.', errorCode: 'TIMEOUT' };
+    }
+
+    const status = error?.status ?? error?.response?.status;
+    console.error(`[NightlyReview:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
+
+    if (status === 401) {
+      return { ok: false, error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
+    }
+    if (status === 429) {
+      return { ok: false, error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
+    }
+    if (status === 500 || status === 503) {
+      return { ok: false, error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
+    }
+
+    return {
+      ok: false,
+      error: `Erro ao gerar revisão (${error?.message ?? 'desconhecido'}). Verifique os logs.`,
+      errorCode: 'UNKNOWN_ERROR',
+    };
   }
 }

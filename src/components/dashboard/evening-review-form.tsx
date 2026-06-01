@@ -25,7 +25,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { generateNightlyReview, type GenerateNightlyReviewOutput } from '@/ai/flows/generate-nightly-review';
+import { generateNightlyReview, type GenerateNightlyReviewResult, type GenerateNightlyReviewOutput } from '@/ai/flows/generate-nightly-review';
 import type { Task, AISuggestedTask } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -148,9 +148,21 @@ export function EveningReviewForm() {
         hasTasks: tasksTotal > 0,
       });
 
-      setAiResult(result);
+      // Novo padrão: result é { ok, data/error }
+      if (!result.ok) {
+        toast({
+          title: 'Erro ao analisar o dia',
+          description: result.error ?? 'Tente novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Sucesso
+      const data = result.data;
+      setAiResult(data);
       setSuggestedTasks(
-        result.suggestedTasks.map((t) => ({
+        data.suggestedTasks.map((t) => ({
           ...t,
           accepted: true,
           editedContent: t.content,

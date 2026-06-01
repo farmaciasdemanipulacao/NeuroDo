@@ -112,6 +112,25 @@ function MilestoneCard({
                 projectId: milestone.projectId,
             });
     
+            // Verifica se há erro
+            if ('error' in result) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Erro ao gerar checklist', 
+                    description: result.error 
+                });
+                return;
+            }
+
+            // Novo padrão: result tem subtasks
+            if (!result.subtasks || result.subtasks.length === 0) {
+                toast({ 
+                    title: 'Nenhuma subtarefa', 
+                    description: 'A IA não gerou nenhuma subtarefa para este marco.'
+                });
+                return;
+            }
+    
             const batch = writeBatch(firestore);
             result.subtasks.forEach((subtask, index) => {
                 const subtaskRef = doc(collection(firestore, 'users', user.uid, 'milestones', milestone.id, 'subtasks'));

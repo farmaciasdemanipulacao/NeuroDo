@@ -30,7 +30,7 @@ try {
   const openaiPkg = JSON.parse(fs.readFileSync(openaiPkgPath, 'utf8'));
   console.log('openai version:', openaiPkg.version || 'unknown');
 } catch (e) {
-  console.error('Could not resolve openai package.json:', e.message);
+  console.error('Could not resolve openai package.json via require.resolve:', e.message);
 }
 
 if (openaiPkgPath) {
@@ -55,6 +55,54 @@ if (openaiPkgPath) {
   } catch (e) {
     console.error('Could not list openai/src:', e.message);
   }
+}
+
+// If require.resolve failed, also inspect node_modules directly to ensure the package is present
+try {
+  const candidateDir = path.join(process.cwd(), 'node_modules', 'openai');
+  if (fs.existsSync(candidateDir)) {
+    console.log('node_modules/openai exists at:', candidateDir);
+    try {
+      const files = fs.readdirSync(candidateDir);
+      console.log('node_modules/openai files:', files.join(', '));
+    } catch (e) {
+      console.error('Could not list node_modules/openai files:', e.message);
+    }
+
+    const candidatePkg = path.join(candidateDir, 'package.json');
+    if (fs.existsSync(candidatePkg)) {
+      try {
+        console.log('node_modules/openai package.json content:');
+        console.log(fs.readFileSync(candidatePkg, 'utf8'));
+      } catch (e) {
+        console.error('Failed reading node_modules/openai/package.json:', e.message);
+      }
+    } else {
+      console.log('node_modules/openai/package.json not found at', candidatePkg);
+    }
+
+    const candidateSrc = path.join(candidateDir, 'src');
+    if (fs.existsSync(candidateSrc)) {
+      try {
+        const srcFiles = fs.readdirSync(candidateSrc);
+        console.log('node_modules/openai/src files:', srcFiles.join(', '));
+        const tsconfigPath = path.join(candidateSrc, 'tsconfig.json');
+        if (fs.existsSync(tsconfigPath)) {
+          console.log('--- begin node_modules/openai/src/tsconfig.json ---');
+          console.log(fs.readFileSync(tsconfigPath, 'utf8'));
+          console.log('--- end node_modules/openai/src/tsconfig.json ---');
+        }
+      } catch (e) {
+        console.error('Could not inspect node_modules/openai/src:', e.message);
+      }
+    } else {
+      console.log('node_modules/openai/src not present at', candidateSrc);
+    }
+  } else {
+    console.log('node_modules/openai not found at', candidateDir);
+  }
+} catch (e) {
+  console.error('Fallback inspection failed:', e.message);
 }
 
 // root tsconfig info

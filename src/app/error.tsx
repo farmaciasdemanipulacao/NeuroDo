@@ -1,3 +1,5 @@
+"use client";
+
 // FNV-1a 32-bit — leve e determinístico, compatível com a implementação client-side
 function hashString(s: string) {
   let h = 2166136261 >>> 0;

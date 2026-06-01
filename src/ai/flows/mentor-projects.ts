@@ -50,7 +50,7 @@ const ProjectContextSchema = z.object({
   estimatedMonthlyRevenue: z.number().optional(),
 });
 
-export const MentorProjectsInputSchema = z.object({
+const MentorProjectsInputSchema = z.object({
   mode: z.enum(['lost', 'celebrate', 'strategic']),
   projects: z.array(ProjectContextSchema),
   currentHour: z.number().min(0).max(23),

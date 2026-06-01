@@ -1,5 +1,3 @@
-import React from 'react';
-
 // FNV-1a 32-bit — leve e determinístico, compatível com a implementação client-side
 function hashString(s: string) {
   let h = 2166136261 >>> 0;
@@ -10,19 +8,11 @@ function hashString(s: string) {
   return ("00000000" + (h >>> 0).toString(16)).slice(-8);
 }
 
-export default function AppError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset?: () => void;
-}) {
-  // Calcular digest com a mesma função do client para correlação direta.
+export default function AppError({ error }: { error: Error & { digest?: string } }) {
   const payload = `${error?.message ?? ''}\n${error?.stack ?? ''}`;
   const digest = hashString(payload);
 
   // Log completo no servidor — ficará visível nos logs do Vercel / terminal.
-  // Mantemos a mensagem mínima no cliente para não vazar detalhes.
   // eslint-disable-next-line no-console
   console.error(`[Server Error] Digest: ${digest}`, error);
 
@@ -50,14 +40,6 @@ export default function AppError({
           e procure pelo digest abaixo para obter a stack completa.
         </p>
         <p style={{ color: '#F87171', fontFamily: 'monospace' }}>Digest: {digest}</p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          {typeof reset === 'function' ? (
-            // @ts-ignore - reset é fornecido pelo Next quando aplicável
-            <button onClick={reset} style={{ padding: '8px 12px', borderRadius: 6 }}>
-              Tentar novamente
-            </button>
-          ) : null}
-        </div>
       </body>
     </html>
   );

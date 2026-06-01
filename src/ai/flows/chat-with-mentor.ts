@@ -55,7 +55,7 @@ export type ChatWithMentorInput = z.infer<typeof ChatWithMentorInputSchema>;
 
 export type ChatWithMentorOutput =
   | { response: string; error?: never; errorCode?: never }
-  | { response?: never; error: string; errorCode: string };
+  | { response?: never; error: string; errorCode: string; retryAfterMs?: number };
 
 export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWithMentorOutput> {
   const requestId = `mentor-${Date.now()}`;
@@ -127,7 +127,45 @@ export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWi
       return { error: 'OPENAI_API_KEY inválida ou expirada. Verifique as variáveis de ambiente no Vercel.', errorCode: 'INVALID_API_KEY' };
     }
     if (status === 429) {
-      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
+      // Tentar extrair o cabeçalho Retry-After (várias formas dependendo da lib)
+      let retryAfterMs: number | undefined = undefined;
+      try {
+        const headers = error?.response?.headers;
+        const raw =
+          (typeof headers?.get === 'function' && headers.get('retry-after')) ||
+          headers?.['retry-after'] ||
+          headers?.['Retry-After'] ||
+          error?.headers?.['retry-after'] ||
+          error?.retry_after;
+
+        if (raw) {
+          const asInt = parseInt(String(raw), 10);
+          if (!Number.isNaN(asInt)) {
+            // header geralmente em segundos
+            retryAfterMs = asInt * 1000;
+          } else {
+            const parsedDate = Date.parse(String(raw));
+            if (!Number.isNaN(parsedDate)) {
+              retryAfterMs = parsedDate - Date.now();
+            }
+          }
+        }
+      } catch (e) {
+        // silencioso
+      }
+
+      console.error(`[MentorDo:${requestId}] Rate limit recebido. Retry-After ms: ${retryAfterMs ?? 'indefinido'}`);
+
+      // Verificar mensagens de corpo que indiquem falta de quota
+      const bodyMsg = (error?.response?.body?.error?.message || error?.message || '').toString().toLowerCase();
+      if (bodyMsg.includes('quota') || bodyMsg.includes('insufficient') || bodyMsg.includes('exceed')) {
+        return {
+          error: 'Sua conta OpenAI parece não ter quota disponível ou está suspensa. Verifique o painel da OpenAI.',
+          errorCode: 'OUT_OF_QUOTA',
+        };
+      }
+
+      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT', retryAfterMs };
     }
     if (status === 500 || status === 503) {
       return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };

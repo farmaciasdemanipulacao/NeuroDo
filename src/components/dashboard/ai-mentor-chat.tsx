@@ -53,15 +53,24 @@ async function chatWithMentorWithRetry(
 
   // Novo padrão: chatWithMentor retorna objeto com error em vez de throw
   if (result.error) {
-    console.error(`[MentorDo Retry ${retryCount}/${MAX_RETRIES}] errorCode=${result.errorCode} — ${result.error}`);
+    console.error(`[MentorDo Retry ${retryCount}/${MAX_RETRIES}] errorCode=${result.errorCode} — ${result.error} retryAfterMs=${result.retryAfterMs ?? 'n/a'}`);
 
     const canRetry = retryCount < MAX_RETRIES && RETRYABLE_CODES.includes(result.errorCode ?? '');
     if (canRetry) {
-      const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+      const serverRetryMs = typeof result.retryAfterMs === 'number' ? result.retryAfterMs : undefined;
+      const baseDelay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+      let delay = baseDelay;
+      if (serverRetryMs && serverRetryMs > baseDelay) {
+        // respeitar Retry-After do servidor com pequeno jitter
+        const jitter = Math.floor(Math.random() * 1000);
+        delay = serverRetryMs + jitter;
+      }
+
       await new Promise(resolve => setTimeout(resolve, delay));
       return chatWithMentorWithRetry(message, history, profileContext, retryCount + 1);
     }
 
+    // Sem retry possível, propagar erro com mensagem do servidor
     throw new Error(result.error);
   }
 

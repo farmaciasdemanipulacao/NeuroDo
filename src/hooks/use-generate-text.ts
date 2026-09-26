@@ -14,6 +14,15 @@ export function useGenerateText() {
     setGeneratedText(null);
     try {
       const result = await generateText({ prompt });
+      if (result.error) {
+        toast({
+          variant: 'destructive',
+          title: result.errorCode === 'NO_CREDITS' ? 'IA temporariamente sem créditos' : 'Erro na Geração de Texto',
+          description: result.error,
+        });
+        return;
+      }
+
       // Remove quotes and markdown characters for cleaner output
       const cleanText = result.text.replace(/["*#]/g, '').trim();
       setGeneratedText(cleanText);

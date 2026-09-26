@@ -224,27 +224,38 @@ export default function TeamMemberPage() {
     };
 
     const handleGenerateFeedback = async (inputs: { positivePoint: string, improvementPoint: string, relatedGoal: string }) => {
-        if (!member || !user) return;
+        if (!member || !user || !firestore) return;
         setIsGeneratingFeedback(true);
-                try {
-                    const res = await generateFeedbackSession({
-                        collaboratorName: member.name,
-                        behavioralProfile: member.profileResults || 'Não definido',
-                        memberId: member.id,
-                        userId: user.uid,
-                        ...inputs
-                    });
+        try {
+            const res = await generateFeedbackSession({
+                collaboratorName: member.name,
+                behavioralProfile: member.profileResults || 'Não definido',
+                memberId: member.id,
+                userId: user.uid,
+                ...inputs
+            });
 
-                    if (res.error) {
-                        toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: res.error });
-                    } else {
-                        setGeneratedScript(res.result ?? null);
-                    }
-                } catch (error: any) {
-                    toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: error.message });
-                } finally {
-                    setIsGeneratingFeedback(false);
+            if (res.error || !res.result) {
+                toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: res.error || 'A IA não retornou um roteiro válido.' });
+                return;
+            }
+
+            setGeneratedScript(res.result);
+            await addDocumentNonBlocking(
+                collection(firestore, 'users', user.uid, 'feedback_sessions'),
+                {
+                    userId: user.uid,
+                    memberId: member.id,
+                    generatedAt: new Date().toISOString(),
+                    script: res.result,
                 }
+            );
+            toast({ title: 'Roteiro gerado e salvo no histórico!' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erro ao Gerar Roteiro', description: error.message });
+        } finally {
+            setIsGeneratingFeedback(false);
+        }
     };
 
     const closeFeedbackModals = () => {

@@ -38,7 +38,7 @@ export async function seedNewUserData(
     type: 'welcome'
   });
 
-  const mentorProfileRef = doc(firestore, 'users', userId, 'mentorDo', 'profile');
+  const mentorProfileRef = doc(firestore, 'users', userId, 'profile', 'mentordo');
   await setDoc(mentorProfileRef, {
     userId,
     neurodivergence: [],

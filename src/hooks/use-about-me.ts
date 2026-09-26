@@ -34,7 +34,15 @@ export function useAboutMe() {
     return doc(firestore, 'users', user.uid, 'profile', 'mentordo');
   }, [user, firestore]);
 
-  const { data: profile, isLoading } = useDoc<MentorDoProfile>(profileRef);
+  const legacyProfileRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid, 'mentorDo', 'profile');
+  }, [user, firestore]);
+
+  const { data: canonicalProfile, isLoading: isCanonicalLoading } = useDoc<MentorDoProfile>(profileRef);
+  const { data: legacyProfile, isLoading: isLegacyLoading } = useDoc<MentorDoProfile>(legacyProfileRef);
+  const profile = canonicalProfile ?? legacyProfile ?? null;
+  const isLoading = isCanonicalLoading || isLegacyLoading;
 
   const updateProfile = useCallback(
     async (updates: Partial<MentorDoProfile>) => {

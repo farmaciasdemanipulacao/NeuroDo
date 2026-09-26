@@ -14,7 +14,6 @@ import {
     GenerateFeedbackSessionOutputSchema, 
     type GenerateFeedbackSessionOutput 
 } from '@/lib/types';
-import { getAdminFirestore } from '@/firebase/admin-init';
 import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 
@@ -93,22 +92,6 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
 
       const generatedScript = validationResult.data;
 
-    // Save to history
-    try {
-        const firestore = getAdminFirestore();
-        const historyRef = firestore.collection('feedback_sessions');
-        await historyRef.add({
-            userId,
-            memberId,
-            generatedAt: new Date().toISOString(),
-            script: generatedScript,
-        });
-    } catch (dbError) {
-        console.error("Failed to save feedback session to history:", dbError);
-        // We don't re-throw here, as the primary function (generating the script) succeeded.
-        // We just log the error.
-    }
-    
     return { result: generatedScript };
 
   } catch (error: any) {

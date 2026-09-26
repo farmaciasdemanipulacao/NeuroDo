@@ -18,9 +18,10 @@ import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
-import { FirebaseContext, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { FirebaseContext, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { useTimesheets } from '@/hooks/use-timesheets';
+import { useAboutMe } from '@/hooks/use-about-me';
 
 type Message = {
   role: 'user' | 'assistant' | 'error';
@@ -105,11 +106,7 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   const firebaseCtx = useContext(FirebaseContext);
   const firestore = firebaseCtx?.firestore ?? null;
   const user = firebaseCtx?.user ?? null;
-  const mentorProfileRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid, 'mentorDo', 'profile');
-  }, [user, firestore]);
-  const { data: mentorProfile } = useDoc(mentorProfileRef);
+  const { profile: mentorProfile } = useAboutMe();
 
   const milestonesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;

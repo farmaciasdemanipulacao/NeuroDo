@@ -15,13 +15,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import { classifyAndRouteIdea } from '@/ai/flows/classify-and-route-idea';
-import { projects } from '@/lib/data';
+import { useProjects } from '@/hooks/use-projects';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export function IdeaCatcher() {
   const [open, setOpen] = useState(false);
   const [idea, setIdea] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { projects: managedProjects } = useProjects();
+  const activeProjects = (managedProjects ?? []).filter((project) => project.status === 'active');
 
   const handleProcessIdea = async () => {
     if (idea.trim().length === 0) {
@@ -38,7 +44,7 @@ export function IdeaCatcher() {
     try {
       const result = await classifyAndRouteIdea({
         idea,
-        projects: projects.map((p) => p.name),
+        projects: activeProjects.map((project) => project.name),
       });
 
       if (!result.ok) {
@@ -53,21 +59,49 @@ export function IdeaCatcher() {
 
       const classification = result.data;
 
-      if (classification.routeTo2027) {
+      if (!user || !firestore) {
         toast({
-          title: 'Ideia classificada para revisão futura',
+          variant: 'destructive',
+          title: 'Não foi possível salvar a ideia',
+          description: 'Sua sessão ainda não está pronta. O texto foi mantido para você tentar novamente.',
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      const matchedProject = classification.relevantProject
+        ? activeProjects.find(
+            (project) => project.name.trim().toLowerCase() === classification.relevantProject!.trim().toLowerCase()
+          )
+        : undefined;
+
+      const bucket = classification.routeTo2027 ? '2027' : (matchedProject?.id ?? '2027');
+
+      await addDocumentNonBlocking(
+        collection(firestore, 'users', user.uid, 'ideas'),
+        {
+          userId: user.uid,
+          content: idea.trim(),
+          bucket,
+          relevantProjectName: matchedProject?.name ?? classification.relevantProject ?? null,
+          routeTo2027: classification.routeTo2027 || !matchedProject,
+          reason: classification.reason,
+          createdAt: new Date().toISOString(),
+        }
+      );
+
+      if (bucket === '2027') {
+        toast({
+          title: 'Ideia salva para revisão futura',
           description: classification.reason,
         });
-        // Here you would typically save the idea to the 2027 bucket in Firestore
-        console.log(`Idea "${idea}" classificada para revisão futura. Reason: ${classification.reason}`);
       } else {
         toast({
-          title: 'Ideia Processada!',
-          description: `Encaminhada para ${classification.relevantProject || 'revisão'}. Motivo: ${classification.reason}`,
+          title: 'Ideia salva e encaminhada!',
+          description: `Encaminhada para ${matchedProject?.name}. Motivo: ${classification.reason}`,
         });
-        // Here you would save the idea to the relevant project in Firestore
-        console.log(`Idea "${idea}" routed to ${classification.relevantProject}.`, classification);
       }
+
       resetState();
     } catch (error) {
       console.error('AI processing failed:', error);

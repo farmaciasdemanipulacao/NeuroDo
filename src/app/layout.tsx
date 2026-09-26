@@ -25,7 +25,7 @@ export const metadata: Metadata = {
       { url: '/logo-neurodo-quadrada.png', type: 'image/png' },
     ],
     apple: [
-      { url: '/logo-neurodo-quadrada.png', type: 'image/png' },
+      { url: '/logo-neurodo-favicon.png', type: 'image/png' },
     ],
   },
 };

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'NeuroDO',
-    statusBarStyle: 'black',
+    statusBarStyle: 'default',
   },
   formatDetection: {
     telephone: false,
@@ -36,7 +36,6 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   themeColor: '#14151f',
 };
-
 
 export default function RootLayout({
   children,
@@ -62,6 +61,22 @@ export default function RootLayout({
           <link rel="shortcut icon" href="/logo-neurodo-favicon.png" />
         </head>
         <body className="font-body antialiased bg-background text-foreground" suppressHydrationWarning>
+          {/*
+            Elemento real, não pseudo-elemento: iOS usa a pintura no topo da
+            viewport para definir o acabamento da barra de status do PWA.
+          */}
+          <div
+            id="ios-status-bar-tint"
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              inset: '0 0 auto 0',
+              height: 1,
+              backgroundColor: '#14151f',
+              pointerEvents: 'none',
+              zIndex: 2147483647,
+            }}
+          />
           <Providers>
             {children}
             <Toaster />

@@ -131,9 +131,31 @@ export function TeamMemberForm({ teamMember, onSuccess, initialTab = 'profile' }
         memberId: teamMember.id,
         userId: user.uid,
       });
+
+      if (result.error || !result.pdi) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao Gerar PDI',
+          description: result.error || 'A IA não retornou um PDI válido.',
+        });
+        return;
+      }
+
       form.setValue('pdi', result.pdi);
-      updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'team', teamMember.id), { pdi: result.pdi });
-      toast({ title: "PDI Gerado e Salvo!", description: "O Plano de Desenvolvimento Individual foi preenchido." });
+      await updateDocumentNonBlocking(
+        doc(firestore, 'users', user.uid, 'team', teamMember.id),
+        { pdi: result.pdi }
+      );
+      await addDocumentNonBlocking(
+        collection(firestore, 'users', user.uid, 'pdi_history'),
+        {
+          userId: user.uid,
+          memberId: teamMember.id,
+          generatedAt: new Date().toISOString(),
+          pdiContent: result.pdi,
+        }
+      );
+      toast({ title: "PDI Gerado e Salvo!", description: "O Plano de Desenvolvimento Individual foi preenchido e adicionado ao histórico." });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erro ao Gerar PDI', description: error.message });
     } finally {

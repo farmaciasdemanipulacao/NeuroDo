@@ -98,7 +98,7 @@ const reportNavItems = [
     question: 'Como está o progresso geral dos seus projetos e metas?',
   },
   {
-    href: '/dashboard/gamification',
+    href: '/dashboard/reports/gamification',
     icon: Sparkles,
     label: 'Gamificação',
     question: 'Quais conquistas, níveis e streaks você já desbloqueou?',

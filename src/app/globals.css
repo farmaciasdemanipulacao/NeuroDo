@@ -73,8 +73,33 @@
   * {
     @apply border-border;
   }
+
+  html,
+  body {
+    background: hsl(var(--background));
+  }
+
   body {
     @apply bg-background text-foreground font-body;
+  }
+}
+
+/*
+ * Mantém a área da barra de status do PWA totalmente opaca.
+ * Isso impede que toasts, alertas e animações vazem visualmente para
+ * a região da Dynamic Island quando o app roda em modo standalone.
+ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: hsl(var(--background));
+    z-index: 9999;
+    pointer-events: none;
   }
 }
 

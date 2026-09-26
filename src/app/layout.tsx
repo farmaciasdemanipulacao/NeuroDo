@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'NeuroDO',
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'black',
   },
   formatDetection: {
     telephone: false,

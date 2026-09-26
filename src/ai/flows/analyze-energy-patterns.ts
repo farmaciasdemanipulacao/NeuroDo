@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // ── OpenAI Client ─────────────────────────────────────────────────────────────
 
@@ -170,14 +171,14 @@ ${historyLines}
 Retorne APENAS o objeto JSON com os campos: overallPattern, insights (3-5 itens com title, description, type, actionable), weekdayAnalysis, energyProductivityCorrelation, recommendation, motivationalNote.`;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.4,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
@@ -194,8 +195,8 @@ Retorne APENAS o objeto JSON com os campos: overallPattern, insights (3-5 itens 
 
     return validatedOutput.data;
   } catch (error: unknown) {
-    console.error('Erro ao comunicar com OpenAI:', error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { error: `Erro ao analisar padrões de energia: ${message}`, errorCode: 'OPENAI_ERROR' };
+    const classified = classifyOpenAIError(error);
+    console.error('[EnergyAI] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

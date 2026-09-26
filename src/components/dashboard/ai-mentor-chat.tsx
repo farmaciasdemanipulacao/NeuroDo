@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -12,12 +13,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageCircle, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, MessageCircle, Send, Sparkles, AlertCircle, X } from 'lucide-react';
 import { chatWithMentor } from '@/ai/flows/chat-with-mentor';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '@/lib/utils';
-import { FirebaseContext, useDoc, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { FirebaseContext, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { useTimesheets } from '@/hooks/use-timesheets';
 
@@ -71,7 +72,6 @@ async function chatWithMentorWithRetry(
       const baseDelay = RETRY_DELAY_MS * Math.pow(2, retryCount);
       let delay = baseDelay;
       if (serverRetryMs && serverRetryMs > baseDelay) {
-        // respeitar Retry-After do servidor com pequeno jitter
         const jitter = Math.floor(Math.random() * 1000);
         delay = serverRetryMs + jitter;
       }
@@ -80,7 +80,6 @@ async function chatWithMentorWithRetry(
       return chatWithMentorWithRetry(message, history, profileContext, retryCount + 1);
     }
 
-    // Sem retry possível, propagar erro com mensagem do servidor
     throw new MentorRequestError(result.error, result.errorCode);
   }
 
@@ -121,7 +120,6 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   // Timesheet: produtividade do usuário
   const { data: timesheets } = useTimesheets();
 
-  // Exemplo de uso: gerar contexto de produtividade
   const productivityContext = timesheets && timesheets.length > 0
     ? `O usuário registrou ${timesheets.length} sessões de trabalho em tarefas, totalizando ${(timesheets.reduce((sum, t) => sum + (t.duration || 0), 0) / 3600).toFixed(1)} horas nas últimas semanas. Tarefas mais trabalhadas: ${[...new Set(timesheets.map(t => t.taskTitle))].slice(0,3).join(', ')}.`
     : '';
@@ -141,11 +139,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
     return base + roadmapContext;
   })();
 
-  // O contexto enviado ao MentorDo agora inclui produtividade (timesheet)
   const fullProfileContext = [profileContext, productivityContext].filter(Boolean).join('\n\n');
 
   useEffect(() => {
-    // Scroll to bottom quando mensagens mudam
     if (scrollAreaRef.current) {
       const timer = setTimeout(() => {
         scrollAreaRef.current?.scrollTo({
@@ -188,13 +184,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
       });
 
       setHasError(true);
-
-      // Determinar mensagem amigável baseada no erro
       const friendlyMessage = determineFriendlyErrorMessage(errorMessage, error?.code);
-
       setLastErrorMessage(friendlyMessage);
 
-      // Mostrar toast de erro
       toast({
         variant: 'destructive',
         title: 'Problemas ao Consultar Mentor',
@@ -202,7 +194,6 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
         duration: 5000,
       });
 
-      // Adicionar mensagem de erro ao chat
       setMessages(prev => [
         ...prev,
         {
@@ -255,7 +246,6 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
       return 'Por favor, escreva uma mensagem válida e tente novamente.';
     }
 
-    // Fallback
     return 'Desculpe, ocorreu um problema ao consultar o mentor. Tente novamente em alguns instantes.';
   };
 
@@ -271,112 +261,138 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
           <span className="sr-only">Falar com Mentor</span>
         </Button>
       </div>
+
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="flex flex-col w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Sparkles className="text-primary h-5 w-5" />
-              Falar com Mentor
-            </SheetTitle>
-            <SheetDescription>
-              Seu parceiro de IA para destravar, celebrar e decidir. Como posso ajudar agora?
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent
+          side="right"
+          overlayClassName="bg-background sm:bg-black/80"
+          closeButtonClassName="hidden sm:flex"
+          className="inset-0 flex h-dvh max-h-dvh w-screen max-w-none flex-col overflow-hidden border-0 p-0 shadow-none sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-full sm:max-w-md sm:border-l sm:p-6 sm:shadow-lg"
+        >
+          <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:p-0">
+            <div className="flex items-start gap-3">
+              <SheetHeader className="min-w-0 flex-1 text-left">
+                <SheetTitle className="flex items-center gap-2 pr-2">
+                  <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+                  Falar com Mentor
+                </SheetTitle>
+                <SheetDescription>
+                  Seu parceiro de IA para destravar, celebrar e decidir. Como posso ajudar agora?
+                </SheetDescription>
+              </SheetHeader>
 
-          {/* Alert de erro persistente */}
-          {hasError && (
-            <Alert variant="destructive" className="my-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {lastErrorMessage || 'Estou tendo dificuldades de comunicação. Tente novamente ou aguarde um momento.'}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <ScrollArea className="flex-1 my-4 pr-4 -mr-4" ref={scrollAreaRef}>
-            <div className="space-y-6">
-              {messages.length === 0 && (
-                <div className="text-center text-sm text-muted-foreground p-4">
-                  Comece uma conversa digitando abaixo ou usando uma ação rápida.
-                </div>
-              )}
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    'flex items-start gap-3',
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  )}
+              <SheetClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 sm:hidden"
+                  aria-label="Fechar Mentor"
                 >
-                  {(message.role === 'assistant' || message.role === 'error') && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {message.role === 'error' ? '⚠️' : 'IA'}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+                  <X className="h-5 w-5" />
+                </Button>
+              </SheetClose>
+            </div>
+
+            {hasError && (
+              <Alert variant="destructive" className="my-2 shrink-0">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {lastErrorMessage || 'Estou tendo dificuldades de comunicação. Tente novamente ou aguarde um momento.'}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <ScrollArea className="my-4 min-h-0 flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
+              <div className="space-y-6">
+                {messages.length === 0 && (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Comece uma conversa digitando abaixo ou usando uma ação rápida.
+                  </div>
+                )}
+
+                {messages.map((message, index) => (
                   <div
+                    key={index}
                     className={cn(
-                      'max-w-[80%] rounded-lg p-3 text-sm whitespace-pre-wrap',
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : message.role === 'error'
-                          ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                          : 'bg-muted'
+                      'flex items-start gap-3',
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
                   >
-                    {message.content}
-                  </div>
-                  {message.role === 'user' && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://picsum.photos/seed/user-avatar/100/100" alt="@user" />
-                      <AvatarFallback>G</AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
-              {isProcessing && (
-                <div className="flex items-start gap-3 justify-start">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">IA</AvatarFallback>
-                  </Avatar>
-                  <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Pensando...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                    {(message.role === 'assistant' || message.role === 'error') && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {message.role === 'error' ? '⚠️' : 'IA'}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
 
-          <div className="mt-auto space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              {quickActions.map(action => (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction(action.prompt)}
+                    <div
+                      className={cn(
+                        'max-w-[80%] rounded-lg p-3 text-sm whitespace-pre-wrap',
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : message.role === 'error'
+                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                            : 'bg-muted'
+                      )}
+                    >
+                      {message.content}
+                    </div>
+
+                    {message.role === 'user' && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="https://picsum.photos/seed/user-avatar/100/100" alt="@user" />
+                        <AvatarFallback>G</AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ))}
+
+                {isProcessing && (
+                  <div className="flex items-start gap-3 justify-start">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">IA</AvatarFallback>
+                    </Avatar>
+                    <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm text-muted-foreground">Pensando...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            <div className="shrink-0 space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {quickActions.map(action => (
+                  <Button
+                    key={action.label}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickAction(action.prompt)}
+                    disabled={isProcessing}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Input
+                  id="message"
+                  placeholder="Digite sua mensagem..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
                   disabled={isProcessing}
-                >
-                  {action.label}
+                  className="flex-1"
+                />
+                <Button type="submit" size="icon" onClick={handleSend} disabled={isProcessing}>
+                  <Send className="h-4 w-4" />
+                  <span className="sr-only">Enviar</span>
                 </Button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                id="message"
-                placeholder="Digite sua mensagem..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                disabled={isProcessing}
-                className="flex-1"
-              />
-              <Button type="submit" size="icon" onClick={handleSend} disabled={isProcessing}>
-                <Send className="h-4 w-4" />
-                <span className="sr-only">Enviar</span>
-              </Button>
+              </div>
             </div>
           </div>
         </SheetContent>

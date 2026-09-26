@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -99,6 +100,9 @@ export function EveningReviewForm() {
   // Save state
   const [isSaving, setIsSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [completedReflection, setCompletedReflection] = useState('');
+  const [blockersReflection, setBlockersReflection] = useState('');
+  const [tomorrowTop3, setTomorrowTop3] = useState('');
 
   // ── Load today's tasks from Firestore ──────────────────────────────────────
   const tasksQuery = useMemoFirebase(() => {
@@ -200,6 +204,9 @@ export function EveningReviewForm() {
           energyLevel: energyLevel,
           tasksCompleted,
           tasksTotal,
+          completedReflection: completedReflection.trim(),
+          blockersReflection: blockersReflection.trim(),
+          tomorrowTop3: tomorrowTop3.trim(),
           tasksSummary: todaysTasks.map((t) => ({
             id: t.id,
             content: t.content,
@@ -414,6 +421,26 @@ export function EveningReviewForm() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="md:col-span-2">
+        <CardHeader>
+          <CardTitle className="text-base">Fechamento consciente</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <label htmlFor="completed-reflection" className="text-sm font-medium">O que completei?</label>
+            <Textarea id="completed-reflection" value={completedReflection} onChange={(event) => setCompletedReflection(event.target.value)} placeholder="Vitórias, entregas e avanços de hoje." rows={4} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="blockers-reflection" className="text-sm font-medium">Onde travei?</label>
+            <Textarea id="blockers-reflection" value={blockersReflection} onChange={(event) => setBlockersReflection(event.target.value)} placeholder="Bloqueios, distrações ou decisões pendentes." rows={4} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="tomorrow-top-3" className="text-sm font-medium">Top 3 de amanhã</label>
+            <Textarea id="tomorrow-top-3" value={tomorrowTop3} onChange={(event) => setTomorrowTop3(event.target.value)} placeholder="As três coisas que mais importam amanhã." rows={4} />
+          </div>
         </CardContent>
       </Card>
 

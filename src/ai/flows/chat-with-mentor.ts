@@ -10,6 +10,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
@@ -88,20 +89,16 @@ export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWi
     { role: 'user', content: message },
   ];
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     console.log(`[MentorDo:${requestId}] Chamando OpenAI. Mensagens no histórico: ${messages.length}`);
 
-    const res = await openai.chat.completions.create({
+    const res = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model,
       messages,
       temperature: 0.5,
       max_tokens: 512,
-    });
-
-    clearTimeout(timeoutId);
+    }, { signal }));
 
     const text = res.choices[0]?.message?.content?.trim();
     if (!text) {
@@ -113,67 +110,12 @@ export async function chatWithMentor(input: ChatWithMentorInput): Promise<ChatWi
     return { response: text };
 
   } catch (error: any) {
-    clearTimeout(timeoutId);
-
-    if (error?.name === 'AbortError') {
-      console.error(`[MentorDo:${requestId}] Timeout (30s).`);
-      return { error: 'O mentor demorou demais para responder. Tente novamente.', errorCode: 'TIMEOUT' };
-    }
-
-    const status = error?.status ?? error?.response?.status;
-    console.error(`[MentorDo:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
-
-    if (status === 401) {
-      return { error: 'OPENAI_API_KEY inválida ou expirada. Verifique as variáveis de ambiente no Vercel.', errorCode: 'INVALID_API_KEY' };
-    }
-    if (status === 429) {
-      // Tentar extrair o cabeçalho Retry-After (várias formas dependendo da lib)
-      let retryAfterMs: number | undefined = undefined;
-      try {
-        const headers = error?.response?.headers;
-        const raw =
-          (typeof headers?.get === 'function' && headers.get('retry-after')) ||
-          headers?.['retry-after'] ||
-          headers?.['Retry-After'] ||
-          error?.headers?.['retry-after'] ||
-          error?.retry_after;
-
-        if (raw) {
-          const asInt = parseInt(String(raw), 10);
-          if (!Number.isNaN(asInt)) {
-            // header geralmente em segundos
-            retryAfterMs = asInt * 1000;
-          } else {
-            const parsedDate = Date.parse(String(raw));
-            if (!Number.isNaN(parsedDate)) {
-              retryAfterMs = parsedDate - Date.now();
-            }
-          }
-        }
-      } catch (e) {
-        // silencioso
-      }
-
-      console.error(`[MentorDo:${requestId}] Rate limit recebido. Retry-After ms: ${retryAfterMs ?? 'indefinido'}`);
-
-      // Verificar mensagens de corpo que indiquem falta de quota
-      const bodyMsg = (error?.response?.body?.error?.message || error?.message || '').toString().toLowerCase();
-      if (bodyMsg.includes('quota') || bodyMsg.includes('insufficient') || bodyMsg.includes('exceed')) {
-        return {
-          error: 'Sua conta OpenAI parece não ter quota disponível ou está suspensa. Verifique o painel da OpenAI.',
-          errorCode: 'OUT_OF_QUOTA',
-        };
-      }
-
-      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT', retryAfterMs };
-    }
-    if (status === 500 || status === 503) {
-      return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
-    }
-
+    const classified = classifyOpenAIError(error);
+    console.error(`[MentorDo:${requestId}] Erro OpenAI. Código: ${classified.errorCode}. Status: ${classified.status ?? 'n/a'}.`);
     return {
-      error: `Erro ao consultar o mentor (${error?.message ?? 'desconhecido'}). Verifique os logs do Vercel.`,
-      errorCode: 'UNKNOWN_ERROR',
+      error: classified.error,
+      errorCode: classified.errorCode,
+      retryAfterMs: classified.retryAfterMs,
     };
   }
 }

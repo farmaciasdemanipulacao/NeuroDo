@@ -2,6 +2,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- OpenAI Client Configuration ---
 
@@ -130,13 +131,11 @@ Gere:
 Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, suggestedTasks, motivationalNote.`;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     console.log(`[NightlyReview:${requestId}] Chamando OpenAI.`);
 
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -144,9 +143,7 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
       ],
       temperature: 0.6,
       max_tokens: 1200,
-    });
-
-    clearTimeout(timeoutId);
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content?.trim();
     if (!rawOutput) {
@@ -252,30 +249,8 @@ Responda APENAS com JSON válido com os campos: dayAnalysis, energyPattern, sugg
     return { ok: true, data: validatedOutput.data };
 
   } catch (error: any) {
-    clearTimeout(timeoutId);
-
-    if (error?.name === 'AbortError') {
-      console.error(`[NightlyReview:${requestId}] Timeout (30s).`);
-      return { ok: false, error: 'A revisão demorou demais. Tente novamente.', errorCode: 'TIMEOUT' };
-    }
-
-    const status = error?.status ?? error?.response?.status;
-    console.error(`[NightlyReview:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
-
-    if (status === 401) {
-      return { ok: false, error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    }
-    if (status === 429) {
-      return { ok: false, error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
-    }
-    if (status === 500 || status === 503) {
-      return { ok: false, error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
-    }
-
-    return {
-      ok: false,
-      error: `Erro ao gerar revisão (${error?.message ?? 'desconhecido'}). Verifique os logs.`,
-      errorCode: 'UNKNOWN_ERROR',
-    };
+    const classified = classifyOpenAIError(error);
+    console.error(`[NightlyReview:${requestId}] Erro OpenAI. Código: ${classified.errorCode}. Status: ${classified.status ?? 'n/a'}.`);
+    return { ok: false, error: classified.error, errorCode: classified.errorCode };
   }
 }

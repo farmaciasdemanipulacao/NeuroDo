@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 const apiKey = process.env.OPENAI_API_KEY;
 const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
@@ -56,14 +57,15 @@ const ProvideContextAwareAssistanceOutputSchema = z.object({
   // Campos internos — nunca exibidos ao usuário
   _isError: z.boolean().optional(),
   _errorMessage: z.string().optional(),
+  _errorCode: z.string().optional(),
 });
 
 export type ProvideContextAwareAssistanceOutput = z.infer<typeof ProvideContextAwareAssistanceOutputSchema>;
 
 // Helper para retornar erro embutido — nunca lança exceção
-function errorResponse(message: string): ProvideContextAwareAssistanceOutput {
-  console.error('[IA Dashboard]', message);
-  return { suggestion: '', reasoning: '', breakdown: '', _isError: true, _errorMessage: message };
+function errorResponse(message: string, errorCode?: string): ProvideContextAwareAssistanceOutput {
+  console.error('[IA Dashboard]', { errorCode, message });
+  return { suggestion: '', reasoning: '', breakdown: '', _isError: true, _errorMessage: message, _errorCode: errorCode };
 }
 
 export async function provideContextAwareAssistance(
@@ -72,7 +74,7 @@ export async function provideContextAwareAssistance(
   // Nunca lança exceção — React 19 startTransition propaga throws para o error boundary,
   // bypassando o try/catch do componente. Sempre retornar dados com _isError flag.
   if (!openai || initError) {
-    return errorResponse(`Chave da OpenAI não configurada. ${initError}`);
+    return errorResponse(`Chave da OpenAI não configurada. ${initError}`, 'INIT_ERROR');
   }
 
   const validatedInput = ProvideContextAwareAssistanceInputSchema.safeParse(input);
@@ -93,7 +95,7 @@ export async function provideContextAwareAssistance(
   `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -101,7 +103,7 @@ export async function provideContextAwareAssistance(
       ],
       temperature: 0.5,
       max_tokens: 550,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content?.trim();
     if (!rawOutput) {
@@ -153,7 +155,11 @@ export async function provideContextAwareAssistance(
 
     return { suggestion, reasoning, breakdown };
   } catch (error: any) {
-    console.error('[IA Dashboard] Erro ao chamar OpenAI:', error);
-    return errorResponse(`Erro ao chamar OpenAI: ${error.message ?? error}`);
+    const classified = classifyOpenAIError(error);
+    console.error('[IA Dashboard] Erro OpenAI classificado:', {
+      errorCode: classified.errorCode,
+      status: classified.status,
+    });
+    return errorResponse(classified.error, classified.errorCode);
   }
 }

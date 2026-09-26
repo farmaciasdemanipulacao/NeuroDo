@@ -11,7 +11,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
-import { getAdminFirestore } from '@/firebase/admin-init';
 
 
 // --- OpenAI Client Configuration ---
@@ -104,22 +103,6 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
 
     const trimmedPdi = pdiText.trim();
 
-    // Save to history (non-blocking)
-    try {
-        const firestore = getAdminFirestore();
-        const historyRef = firestore.collection('pdi_history');
-        await historyRef.add({
-            userId,
-            memberId,
-            generatedAt: new Date().toISOString(),
-            pdiContent: trimmedPdi,
-        });
-        console.log(`[GeneratePDI:${requestId}] PDI salvo no Firestore.`);
-    } catch (dbError: any) {
-        console.warn(`[GeneratePDI:${requestId}] Falha ao salvar PDI no Firestore:`, dbError?.message);
-        // Não relança porque o PDI foi gerado com sucesso
-    }
-    
     console.log(`[GeneratePDI:${requestId}] Sucesso. Tamanho: ${trimmedPdi.length} chars`);
     return { pdi: trimmedPdi };
 

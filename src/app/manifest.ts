@@ -15,16 +15,10 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['productivity', 'business', 'lifestyle'],
     icons: [
       {
-        src: '/logo-neurodo-quadrada.png',
+        src: '/logo-neurodo-favicon.png',
         sizes: 'any',
         type: 'image/png',
         purpose: 'any',
-      },
-      {
-        src: '/logo-neurodo-quadrada.png',
-        sizes: 'any',
-        type: 'image/png',
-        purpose: 'maskable',
       },
     ],
   };

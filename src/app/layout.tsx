@@ -1,16 +1,42 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from './providers';
 
-// Metadata can be defined in a Server Component layout
-// We will move this to a template or page file if needed, but for now, it's removed to solve the error.
-/*
 export const metadata: Metadata = {
-  title: 'NeuroDO',
-  description: 'Um SO para o Empreendedor Neurodivergente',
+  applicationName: 'NeuroDO',
+  title: {
+    default: 'NeuroDO',
+    template: '%s · NeuroDO',
+  },
+  description: 'Sistema operacional para execução, foco e organização do empreendedor neurodivergente.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'NeuroDO',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: '/logo-neurodo-favicon.png', type: 'image/png' },
+      { url: '/logo-neurodo-quadrada.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/logo-neurodo-quadrada.png', type: 'image/png' },
+    ],
+  },
 };
-*/
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#14151f',
+};
+
 
 export default function RootLayout({
   children,

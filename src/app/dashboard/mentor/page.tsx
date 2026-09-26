@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirestore, useUser, useDoc } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,10 @@ export default function MentorProfilePage() {
   const [formState, setFormState] = useState(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
 
-  const mentorProfileRef = user && firestore ? doc(firestore, 'users', user.uid, 'mentorDo', 'profile') : null;
+  const mentorProfileRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid, 'mentorDo', 'profile');
+  }, [user, firestore]);
   const { data: mentorProfile, isLoading: isProfileLoading } = useDoc(mentorProfileRef);
 
   useEffect(() => {

@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { BehavioralProfileOutputSchema, type BehavioralProfileOutput } from '@/lib/types';
 import { openai, initError, model } from '@/ai/openai-client';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- System Prompt for Behavioral Analysis ---
 const SYSTEM_PROMPT = `Você é um Psicoanalista Organizacional e especialista em comportamento humano, com profundo conhecimento em DISC, MBTI, Eneagrama e Linguagens do Amor. Sua função é analisar as respostas de um questionário de um membro da equipe de Gustavo, um CEO com TDAH, e gerar um perfil acionável para ele.
@@ -54,14 +55,14 @@ export async function generateBehavioralProfile(input: GenerateBehavioralProfile
   `;
   
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.3,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
@@ -84,10 +85,8 @@ export async function generateBehavioralProfile(input: GenerateBehavioralProfile
     }
 
   } catch (error: any) {
-    console.error('Erro ao gerar perfil comportamental:', error);
-    const status = error?.status ?? error?.response?.status;
-    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
-    return { error: `Falha na análise do perfil: ${error?.message ?? 'erro desconhecido'}`, errorCode: 'OPENAI_ERROR' };
+    const classified = classifyOpenAIError(error);
+    console.error('[BehavioralProfile] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

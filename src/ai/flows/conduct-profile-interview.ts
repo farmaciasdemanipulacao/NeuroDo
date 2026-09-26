@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { openai, initError, model } from '@/ai/openai-client';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 const SYSTEM_PROMPT = `Você é um especialista em análise de perfil comportamental, treinado nas metodologias DISC, MBTI, e Eneagrama. Sua missão é conduzir uma entrevista conversacional e amigável com um membro da equipe para descobrir seus padrões de comportamento no trabalho.
 
@@ -56,12 +57,12 @@ export async function conductProfileInterview(input: ConductProfileInterviewInpu
   ];
   
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
         model: model,
         messages: messages,
         temperature: 0.7,
         max_tokens: 150,
-    });
+    }, { signal }));
 
     const responseMessage = response.choices[0]?.message?.content;
 
@@ -72,10 +73,8 @@ export async function conductProfileInterview(input: ConductProfileInterviewInpu
     return { response: responseMessage };
 
   } catch (error: any) {
-    console.error('Erro na comunicação com a API da OpenAI:', error);
-    const status = error?.status ?? error?.response?.status;
-    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
-    return { error: `Desculpe, tive um problema técnico momentâneo. Detalhes: ${error?.message ?? 'desconhecido'}`, errorCode: 'OPENAI_ERROR' };
+    const classified = classifyOpenAIError(error);
+    console.error('[ProfileInterview] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

@@ -15,6 +15,7 @@ import {
     type GenerateFeedbackSessionOutput 
 } from '@/lib/types';
 import { getAdminFirestore } from '@/firebase/admin-init';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 
 import { openai, initError, model } from '@/ai/openai-client';
@@ -67,14 +68,14 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
   `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.4,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
@@ -111,10 +112,8 @@ export async function generateFeedbackSession(input: GenerateFeedbackSessionInpu
     return { result: generatedScript };
 
   } catch (error: any) {
-    console.error('Erro ao gerar roteiro de feedback:', error);
-    const status = error?.status ?? error?.response?.status;
-    if (status === 401) return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    if (status === 429) return { error: 'Limite de requisições atingido.', errorCode: 'RATE_LIMIT' };
-    return { error: `Falha na geração do roteiro: ${error?.message ?? 'erro desconhecido'}`, errorCode: 'OPENAI_ERROR' };
+    const classified = classifyOpenAIError(error);
+    console.error('[FeedbackAI] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

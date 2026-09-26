@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- OpenAI Client Configuration ---
 
@@ -58,21 +59,25 @@ const ClassifyAndRouteIdeaOutputSchema = z.object({
 
 export type ClassifyAndRouteIdeaOutput = z.infer<typeof ClassifyAndRouteIdeaOutputSchema>;
 
+export type ClassifyAndRouteIdeaResult =
+  | { ok: true; data: ClassifyAndRouteIdeaOutput }
+  | { ok: false; error: string; errorCode: string };
+
 
 // --- Main Function ---
 
 export async function classifyAndRouteIdea(
   input: ClassifyAndRouteIdeaInput
-): Promise<ClassifyAndRouteIdeaOutput> {
+): Promise<ClassifyAndRouteIdeaResult> {
 
   if (!openai || initError) {
     console.error("OpenAI Init Error:", initError);
-    throw new Error(`Server Configuration Error: ${initError}`);
+    return { ok: false, error: 'A IA não está configurada corretamente no servidor.', errorCode: 'INIT_ERROR' };
   }
 
   const validatedInput = ClassifyAndRouteIdeaInputSchema.safeParse(input);
   if (!validatedInput.success) {
-    throw new Error(`Invalid input: ${validatedInput.error.message}`);
+    return { ok: false, error: 'A ideia enviada é inválida.', errorCode: 'VALIDATION_ERROR' };
   }
 
   const { idea, projects } = validatedInput.data;
@@ -86,14 +91,14 @@ export async function classifyAndRouteIdea(
   `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.2,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
@@ -109,25 +114,34 @@ export async function classifyAndRouteIdea(
             console.error("OpenAI output validation failed", validatedOutput.error);
             // Instead of throwing, return a safe fallback object.
             return {
-                routeTo2027: true,
-                reason: 'A IA não conseguiu classificar esta ideia automaticamente. Foi guardada para revisão manual.',
+                ok: true,
+                data: {
+                  routeTo2027: true,
+                  reason: 'A IA não conseguiu classificar esta ideia automaticamente. Separe para revisão manual.',
+                },
             };
         }
-        return validatedOutput.data;
+        return { ok: true, data: validatedOutput.data };
 
     } catch(parsingError) {
         console.error("Failed to parse or validate AI response:", parsingError);
         console.log("Raw AI Output that failed:", rawOutput);
          // Return a safe fallback if parsing fails.
         return {
-            routeTo2027: true,
-            reason: 'A IA retornou uma resposta em formato inesperado. A ideia foi guardada para revisão manual.',
+            ok: true,
+            data: {
+              routeTo2027: true,
+              reason: 'A IA retornou uma resposta em formato inesperado. Separe para revisão manual.',
+            },
         };
     }
 
   } catch (error: any) {
-    console.error("Error communicating with OpenAI API:", error);
-    // Let the component handle this error and show a toast
-    throw new Error(`Ocorreu um erro ao se comunicar com o Mentor IA: ${error.message}`);
+    const classified = classifyOpenAIError(error);
+    console.error('[IdeaCatcher] Erro OpenAI classificado:', {
+      errorCode: classified.errorCode,
+      status: classified.status,
+    });
+    return { ok: false, error: classified.error, errorCode: classified.errorCode };
   }
 }

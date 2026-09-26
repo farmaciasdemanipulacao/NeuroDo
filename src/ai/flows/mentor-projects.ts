@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- Configuração OpenAI ---
 
@@ -75,7 +76,7 @@ export type MentorProjectsOutput = z.infer<typeof MentorProjectsOutputSchema>;
 // Resultado discriminado — o Server Action NUNCA lança, sempre retorna ok/error
 export type MentorProjectsResult =
   | { ok: true; data: MentorProjectsOutput }
-  | { ok: false; error: string };
+  | { ok: false; error: string; errorCode?: string };
 
 // --- Helpers de prompt ---
 
@@ -188,14 +189,14 @@ export async function mentorProjects(
     const systemPrompt = buildSystemPrompt(validated.data.mode);
     const userPrompt = buildUserPrompt(validated.data);
 
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
-    });
+    }, { signal }));
 
     const rawOutput = response.choices[0]?.message?.content;
     if (!rawOutput) {
@@ -220,10 +221,8 @@ export async function mentorProjects(
 
     return { ok: true, data: outputValidated.data };
   } catch (err) {
-    console.error('[MentorDo] Erro:', err);
-    return {
-      ok: false,
-      error: 'O MentorDo está temporariamente indisponível. Tente novamente em instantes.',
-    };
+    const classified = classifyOpenAIError(err);
+    console.error('[MentorProjects] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    return { ok: false, error: classified.error, errorCode: classified.errorCode };
   }
 }

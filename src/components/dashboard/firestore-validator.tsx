@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { CheckCircle2, XCircle, Loader2, RefreshCw, Database, Wifi, WifiOff } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, RefreshCw, Database, Wifi, WifiOff, BrainCircuit } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +58,8 @@ export function FirestoreValidator() {
   // ── Teste de escrita/leitura ────────────────────────────────────────────────
   const [writeStatus, setWriteStatus] = useState<CheckStatus>('idle');
   const [writeDetail, setWriteDetail] = useState('');
+  const [aiStatus, setAiStatus] = useState<CheckStatus>('idle');
+  const [aiDetail, setAiDetail] = useState('');
 
   const runWriteTest = useCallback(async () => {
     if (!user || !firestore) return;
@@ -79,6 +81,44 @@ export function FirestoreValidator() {
       setWriteDetail(err instanceof Error ? err.message : 'Erro desconhecido');
     }
   }, [user, firestore]);
+
+  const runAiHealthTest = useCallback(async () => {
+    if (!user) return;
+    setAiStatus('loading');
+    setAiDetail('');
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/mentor-health', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const data = await response.json();
+
+      if (data.status === 'available') {
+        setAiStatus('ok');
+        setAiDetail(`IA disponível · modelo ${data.model}`);
+        return;
+      }
+
+      setAiStatus('error');
+      if (data.status === 'no_credits') {
+        setAiDetail('Configuração válida, mas a API de IA está sem créditos. Este é o estado esperado até recarregar o saldo.');
+      } else if (data.status === 'invalid_key') {
+        setAiDetail('Chave da API inválida ou expirada.');
+      } else if (data.status === 'not_configured') {
+        setAiDetail('OPENAI_API_KEY não configurada.');
+      } else if (response.status === 401 || response.status === 403) {
+        setAiDetail('Você não tem permissão para executar este diagnóstico.');
+      } else {
+        setAiDetail(data.error || 'IA indisponível no momento.');
+      }
+    } catch (err) {
+      setAiStatus('error');
+      setAiDetail(err instanceof Error ? err.message : 'Erro ao verificar a IA.');
+    }
+  }, [user]);
 
   // ── Estado de carregamento global ──────────────────────────────────────────
   const isAnyLoading = isUserLoading || areStatsLoading || arePrefsLoading || areTasksLoading || areReviewsLoading;
@@ -189,6 +229,39 @@ export function FirestoreValidator() {
           >
             <RefreshCw className={`h-3 w-3 ${writeStatus === 'loading' ? 'animate-spin' : ''}`} />
             {writeStatus === 'idle' ? 'Testar Gravação' : 'Testar Novamente'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Diagnóstico de IA */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            {aiStatus === 'idle' && <BrainCircuit className="h-4 w-4 text-muted-foreground" />}
+            {aiStatus === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
+            {aiStatus === 'ok' && <CheckCircle2 className="h-4 w-4 text-primary" />}
+            {aiStatus === 'error' && <XCircle className="h-4 w-4 text-destructive" />}
+            Diagnóstico da IA
+          </CardTitle>
+          <CardDescription>
+            Verifica a geração real do MentorDo sem expor nenhuma parte da chave da API.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {aiDetail && (
+            <p className={`text-sm ${aiStatus === 'ok' ? 'text-primary' : 'text-muted-foreground'}`}>
+              {aiDetail}
+            </p>
+          )}
+          <Button
+            onClick={runAiHealthTest}
+            disabled={!user || aiStatus === 'loading'}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-3 w-3 ${aiStatus === 'loading' ? 'animate-spin' : ''}`} />
+            {aiStatus === 'idle' ? 'Testar IA' : 'Testar Novamente'}
           </Button>
         </CardContent>
       </Card>

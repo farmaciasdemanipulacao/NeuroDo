@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- OpenAI Client Configuration ---
 const apiKey = process.env.OPENAI_API_KEY;
@@ -93,13 +94,11 @@ Prazo: ${dueDate.toLocaleDateString('pt-BR')} (${weeksUntilDeadline} semanas a p
 
 Quebre este milestone em tasks acionáveis.`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     console.log(`[BreakdownMilestone:${requestId}] Chamando OpenAI com modelo ${model}.`);
 
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -107,9 +106,7 @@ Quebre este milestone em tasks acionáveis.`;
       ],
       temperature: 0.7,
       max_tokens: 1000,
-    });
-
-    clearTimeout(timeoutId);
+    }, { signal }));
 
     const content = response.choices[0]?.message?.content;
     if (!content || content.trim() === '') {
@@ -130,34 +127,13 @@ Quebre este milestone em tasks acionáveis.`;
     return { subtasks: result.subtasks };
 
   } catch (error: any) {
-    clearTimeout(timeoutId);
-
-    if (error?.name === 'AbortError') {
-      console.error(`[BreakdownMilestone:${requestId}] Timeout (30s).`);
-      return { error: 'O breakdown demorou demais. Tente novamente.', errorCode: 'TIMEOUT' };
-    }
-
     if (error instanceof SyntaxError) {
       console.error(`[BreakdownMilestone:${requestId}] Erro ao parsear JSON:`, error.message);
       return { error: 'A IA retornou um JSON inválido. Tente novamente.', errorCode: 'PARSE_ERROR' };
     }
 
-    const status = error?.status ?? error?.response?.status;
-    console.error(`[BreakdownMilestone:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
-
-    if (status === 401) {
-      return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    }
-    if (status === 429) {
-      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
-    }
-    if (status === 500 || status === 503) {
-      return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
-    }
-
-    return {
-      error: `Erro ao quebrar milestone (${error?.message ?? 'desconhecido'}). Verifique os logs.`,
-      errorCode: 'UNKNOWN_ERROR',
-    };
+    const classified = classifyOpenAIError(error);
+    console.error(`[BreakdownMilestone:${requestId}] Erro OpenAI. Código: ${classified.errorCode}. Status: ${classified.status ?? 'n/a'}.`);
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

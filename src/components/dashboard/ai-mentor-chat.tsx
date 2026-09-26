@@ -39,6 +39,16 @@ const RETRY_DELAY_MS = 1000;
 
 const RETRYABLE_CODES = ['TIMEOUT', 'RATE_LIMIT', 'OPENAI_SERVER_ERROR'];
 
+class MentorRequestError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'MentorRequestError';
+    this.code = code;
+  }
+}
+
 async function chatWithMentorWithRetry(
   message: string,
   history: Message[],
@@ -71,7 +81,7 @@ async function chatWithMentorWithRetry(
     }
 
     // Sem retry possível, propagar erro com mensagem do servidor
-    throw new Error(result.error);
+    throw new MentorRequestError(result.error, result.errorCode);
   }
 
   return result.response ?? '';
@@ -90,6 +100,7 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [lastErrorMessage, setLastErrorMessage] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const firebaseCtx = useContext(FirebaseContext);
@@ -151,6 +162,7 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
     if (!userMessage) return;
 
     setHasError(false);
+    setLastErrorMessage('');
     const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setInput('');
@@ -178,7 +190,9 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
       setHasError(true);
 
       // Determinar mensagem amigável baseada no erro
-      const friendlyMessage = determineFriendlyErrorMessage(errorMessage);
+      const friendlyMessage = determineFriendlyErrorMessage(errorMessage, error?.code);
+
+      setLastErrorMessage(friendlyMessage);
 
       // Mostrar toast de erro
       toast({
@@ -201,8 +215,17 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
     }
   };
 
-  const determineFriendlyErrorMessage = (error: string): string => {
+  const determineFriendlyErrorMessage = (error: string, errorCode?: string): string => {
     const lowerError = error.toLowerCase();
+
+    if (
+      errorCode === 'NO_CREDITS' ||
+      lowerError.includes('sem créditos') ||
+      lowerError.includes('sem creditos') ||
+      lowerError.includes('quota disponível')
+    ) {
+      return 'A IA do NeuroDO está temporariamente sem créditos. O restante do sistema continua funcionando normalmente.';
+    }
 
     if (lowerError.includes('chave') || lowerError.includes('401')) {
       return 'A chave de API não está configurada corretamente. Entre em contato com o administrador.';
@@ -265,7 +288,7 @@ export function AiMentorChat({ open: openProp, onOpenChange }: AiMentorChatProps
             <Alert variant="destructive" className="my-2">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Estou tendo dificuldades de comunicação. Tente novamente ou aguarde um momento.
+                {lastErrorMessage || 'Estou tendo dificuldades de comunicação. Tente novamente ou aguarde um momento.'}
               </AlertDescription>
             </Alert>
           )}

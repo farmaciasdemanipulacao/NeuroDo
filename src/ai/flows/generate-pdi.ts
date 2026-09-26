@@ -10,6 +10,7 @@
 
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 import { getAdminFirestore } from '@/firebase/admin-init';
 
 
@@ -81,13 +82,11 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
 
   const { contextPrompt, memberId, userId } = validatedInput.data;
   
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     console.log(`[GeneratePDI:${requestId}] Chamando OpenAI.`);
 
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -95,9 +94,7 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
       ],
       temperature: 0.5,
       max_tokens: 800,
-    });
-
-    clearTimeout(timeoutId);
+    }, { signal }));
     
     const pdiText = response.choices[0]?.message?.content;
     if (!pdiText || pdiText.trim() === '') {
@@ -127,29 +124,8 @@ export async function generatePDI(input: GeneratePDIInput): Promise<GeneratePDIO
     return { pdi: trimmedPdi };
 
   } catch (error: any) {
-    clearTimeout(timeoutId);
-
-    if (error?.name === 'AbortError') {
-      console.error(`[GeneratePDI:${requestId}] Timeout (30s).`);
-      return { error: 'A geração de PDI demorou demais. Tente novamente.', errorCode: 'TIMEOUT' };
-    }
-
-    const status = error?.status ?? error?.response?.status;
-    console.error(`[GeneratePDI:${requestId}] Erro OpenAI. Status: ${status}. Mensagem: ${error?.message}`);
-
-    if (status === 401) {
-      return { error: 'OPENAI_API_KEY inválida ou expirada.', errorCode: 'INVALID_API_KEY' };
-    }
-    if (status === 429) {
-      return { error: 'Limite de requisições OpenAI atingido. Aguarde um momento.', errorCode: 'RATE_LIMIT' };
-    }
-    if (status === 500 || status === 503) {
-      return { error: 'Servidores da OpenAI indisponíveis. Tente em alguns instantes.', errorCode: 'OPENAI_SERVER_ERROR' };
-    }
-
-    return {
-      error: `Erro ao gerar PDI (${error?.message ?? 'desconhecido'}). Verifique os logs.`,
-      errorCode: 'UNKNOWN_ERROR',
-    };
+    const classified = classifyOpenAIError(error);
+    console.error(`[GeneratePDI:${requestId}] Erro OpenAI. Código: ${classified.errorCode}. Status: ${classified.status ?? 'n/a'}.`);
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

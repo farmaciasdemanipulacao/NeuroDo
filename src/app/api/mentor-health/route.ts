@@ -1,12 +1,40 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getAdminAuth, getAdminFirestore } from '@/firebase/admin-init';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
+
+export const dynamic = 'force-dynamic';
+
+async function isAdminRequest(request: NextRequest): Promise<boolean> {
+  const authorization = request.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) return false;
+
+  const token = authorization.slice('Bearer '.length).trim();
+  if (!token) return false;
+
+  try {
+    const decoded = await getAdminAuth().verifyIdToken(token);
+    const userDoc = await getAdminFirestore().collection('users').doc(decoded.uid).get();
+    return userDoc.exists && userDoc.data()?.role === 'admin';
+  } catch (error) {
+    console.warn('[MentorHealth] Falha ao validar sessão administrativa.');
+    return false;
+  }
+}
 
 /**
- * GET /api/mentor-health
- * Diagnóstico público da configuração do MentorDo.
- * Não expõe a chave — só confirma se está presente e se a conexão funciona.
+ * Diagnóstico administrativo da IA do NeuroDO.
+ * Faz uma geração mínima para distinguir chave configurada de saldo/quota indisponível.
+ * Nunca retorna a chave ou qualquer fragmento dela.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json(
+      { ok: false, status: 'unauthorized', error: 'Acesso não autorizado.' },
+      { status: 403 }
+    );
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.NEURODO_MODEL || 'gpt-4o-mini';
 
@@ -14,38 +42,67 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
+        status: 'not_configured',
         errorCode: 'MISSING_API_KEY',
-        error: 'OPENAI_API_KEY não está definida nas variáveis de ambiente do Vercel.',
+        error: 'A API de IA não está configurada.',
         model,
-        tip: 'Acesse Vercel → Project → Settings → Environment Variables e adicione OPENAI_API_KEY.',
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
   try {
     const openai = new OpenAI({ apiKey });
-    // Teste mínimo: lista modelos (não gera tokens, só valida a chave)
-    await openai.models.list();
+
+    await withOpenAITimeout(
+      (signal) =>
+        openai.chat.completions.create(
+          {
+            model,
+            messages: [{ role: 'user', content: 'OK' }],
+            temperature: 0,
+            max_tokens: 1,
+          },
+          { signal }
+        ),
+      15_000
+    );
 
     return NextResponse.json({
       ok: true,
+      status: 'available',
       model,
-      apiKeyPrefix: apiKey.slice(0, 7) + '…',
-      message: 'Configuração OK. OpenAI acessível.',
+      message: 'IA configurada e com geração disponível.',
     });
-  } catch (error: any) {
-    const status = error?.status ?? error?.response?.status;
+  } catch (error: unknown) {
+    const classified = classifyOpenAIError(error);
+
+    const status =
+      classified.errorCode === 'NO_CREDITS'
+        ? 'no_credits'
+        : classified.errorCode === 'INVALID_API_KEY'
+          ? 'invalid_key'
+          : classified.errorCode === 'RATE_LIMIT'
+            ? 'rate_limited'
+            : classified.errorCode === 'TIMEOUT'
+              ? 'timeout'
+              : 'unavailable';
+
+    const httpStatus = classified.errorCode === 'RATE_LIMIT' ? 429 : 503;
+
+    console.error(
+      `[MentorHealth] IA indisponível. Código: ${classified.errorCode}. Status HTTP OpenAI: ${classified.status ?? 'n/a'}.`
+    );
+
     return NextResponse.json(
       {
         ok: false,
-        errorCode: status === 401 ? 'INVALID_API_KEY' : 'CONNECTION_ERROR',
-        error: error?.message ?? 'Erro desconhecido ao conectar na OpenAI.',
         status,
+        errorCode: classified.errorCode,
+        error: classified.error,
         model,
-        apiKeyPrefix: apiKey.slice(0, 7) + '…',
       },
-      { status: 500 }
+      { status: httpStatus }
     );
   }
 }

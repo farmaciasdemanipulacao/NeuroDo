@@ -35,27 +35,85 @@ export default function DashboardSettingsPage() {
 
   const isLoading = isUserLoading || arePrefsLoading;
 
-  async function savePreference(updates: Partial<Omit<Preference, 'userId' | 'updatedAt'>>) {
+  async function savePreference(
+    updates: Partial<Omit<Preference, 'userId' | 'updatedAt'>>,
+    successTitle = 'Preferência salva!'
+  ) {
     setIsSaving(true);
     try {
       await updatePreferences(updates);
-      toast({ title: 'Preferência salva!' });
+      toast({ title: successTitle });
+      return true;
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Não foi possível salvar',
         description: error?.message || 'Tente novamente.',
       });
+      return false;
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleToggle(
-    key: keyof Omit<Preference, 'userId' | 'updatedAt' | 'energyLevel' | 'theme' | 'focusTimerDefault'>
-  ) {
-    if (!preferences) return;
-    await savePreference({ [key]: !preferences[key] });
+  async function handleNotificationsToggle(nextEnabled: boolean) {
+    if (!nextEnabled) {
+      await savePreference(
+        { notificationsEnabled: false },
+        'Lembretes desativados'
+      );
+      return;
+    }
+
+    if (
+      typeof window === 'undefined' ||
+      !('Notification' in window) ||
+      !('serviceWorker' in navigator)
+    ) {
+      await savePreference(
+        { notificationsEnabled: true },
+        'Lembretes ativados dentro do app'
+      );
+      toast({
+        description:
+          'Este navegador não oferece notificações do sistema aqui. O NeuroDO continuará mostrando os lembretes enquanto estiver aberto.',
+      });
+      return;
+    }
+
+    let permission = Notification.permission;
+
+    if (permission === 'default') {
+      try {
+        permission = await Notification.requestPermission();
+      } catch (error) {
+        console.warn('[Settings] Não foi possível pedir permissão de notificação:', error);
+      }
+    }
+
+    const saved = await savePreference(
+      { notificationsEnabled: true },
+      permission === 'granted'
+        ? 'Notificações ativadas'
+        : 'Lembretes ativados dentro do app'
+    );
+
+    if (!saved) return;
+
+    if (permission === 'granted') {
+      try {
+        await navigator.serviceWorker.register('/neurodo-sw.js', {
+          scope: '/',
+        });
+      } catch (error) {
+        console.warn('[Settings] Falha ao registrar service worker:', error);
+      }
+    } else {
+      toast({
+        description:
+          'A permissão do sistema não foi concedida. Os lembretes aparecerão dentro do NeuroDO enquanto o app estiver aberto.',
+      });
+    }
   }
 
   async function handleSelect(key: 'theme' | 'focusTimerDefault', value: string) {
@@ -132,20 +190,25 @@ export default function DashboardSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Bell className="h-4 w-4" /> Notificações
+              <Bell className="h-4 w-4" /> Lembretes
             </CardTitle>
-            <CardDescription>Controle os lembretes e alertas.</CardDescription>
+            <CardDescription>
+              Tarefas com horário, pendências, delegações e Revisão Noturna.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="notifs" className="text-sm">Ativar notificações</Label>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="notifs" className="text-sm">Ativar lembretes</Label>
               <Switch
                 id="notifs"
                 checked={preferences?.notificationsEnabled ?? false}
-                onCheckedChange={() => handleToggle('notificationsEnabled')}
+                onCheckedChange={handleNotificationsToggle}
                 disabled={isSaving}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Com permissão do sistema, o NeuroDO usa notificações do app. Sem permissão, os lembretes continuam aparecendo dentro do NeuroDO enquanto ele estiver aberto.
+            </p>
           </CardContent>
         </Card>
 

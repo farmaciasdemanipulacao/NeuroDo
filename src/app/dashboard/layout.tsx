@@ -13,6 +13,7 @@ import { EnergyCheckin } from '@/components/dashboard/energy-checkin';
 import { FloatingFocusTimer } from '@/components/dashboard/floating-focus-timer';
 import { FloatingTaskTimer } from '@/components/dashboard/floating-task-timer';
 import { MentorSosButton } from '@/components/dashboard/mentor-sos-button';
+import { NotificationManager } from '@/components/dashboard/notification-manager';
 import { DashboardDataProvider } from '@/context/dashboard-data-provider';
 
 export default function DashboardLayout({
@@ -44,6 +45,8 @@ export default function DashboardLayout({
 
   return (
     <DashboardDataProvider>
+      <NotificationManager />
+
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>

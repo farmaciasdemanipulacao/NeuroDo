@@ -41,30 +41,42 @@ export function IdeaCatcher() {
         projects: projects.map((p) => p.name),
       });
 
-      if (result.routeTo2027) {
+      if (!result.ok) {
+        toast({
+          variant: 'destructive',
+          title: result.errorCode === 'NO_CREDITS' ? 'IA temporariamente sem créditos' : 'Erro de IA',
+          description: result.error,
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      const classification = result.data;
+
+      if (classification.routeTo2027) {
         toast({
           title: 'Ideia Guardada para 2027!',
-          description: result.reason,
+          description: classification.reason,
         });
         // Here you would typically save the idea to the 2027 bucket in Firestore
-        console.log(`Idea "${idea}" saved to 2027 bucket. Reason: ${result.reason}`);
+        console.log(`Idea "${idea}" classificada para revisão futura. Reason: ${classification.reason}`);
       } else {
         toast({
           title: 'Ideia Processada!',
-          description: `Encaminhada para ${result.relevantProject || 'revisão'}. Motivo: ${result.reason}`,
+          description: `Encaminhada para ${classification.relevantProject || 'revisão'}. Motivo: ${classification.reason}`,
         });
         // Here you would save the idea to the relevant project in Firestore
-        console.log(`Idea "${idea}" routed to ${result.relevantProject}.`, result);
+        console.log(`Idea "${idea}" routed to ${classification.relevantProject}.`, classification);
       }
+      resetState();
     } catch (error) {
       console.error('AI processing failed:', error);
       toast({
         variant: 'destructive',
         title: 'Erro de IA',
-        description: 'Não foi possível processar a ideia. Por favor, tente novamente.',
+        description: 'Não foi possível processar a ideia agora. O texto foi mantido para você tentar novamente.',
       });
-    } finally {
-      resetState();
+      setIsProcessing(false);
     }
   };
 

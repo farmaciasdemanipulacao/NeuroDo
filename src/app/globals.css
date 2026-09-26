@@ -76,6 +76,7 @@
 
   html,
   body {
+    min-height: 100%;
     background: hsl(var(--background));
   }
 
@@ -85,21 +86,15 @@
 }
 
 /*
- * Mantém a área da barra de status do PWA totalmente opaca.
- * Isso impede que toasts, alertas e animações vazem visualmente para
- * a região da Dynamic Island quando o app roda em modo standalone.
+ * No modo instalado, evita overscroll do documento e deixa componentes
+ * internos controlarem a rolagem. Não aplicamos blur, backdrop-filter ou
+ * transparência na superfície superior do app.
  */
-@supports (padding-top: env(safe-area-inset-top)) {
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top);
-    background: hsl(var(--background));
-    z-index: 9999;
-    pointer-events: none;
+@media (display-mode: standalone) {
+  html,
+  body {
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
   }
 }
 

@@ -55,7 +55,7 @@ export function IdeaCatcher() {
 
       if (classification.routeTo2027) {
         toast({
-          title: 'Ideia Guardada para 2027!',
+          title: 'Ideia classificada para revisão futura',
           description: classification.reason,
         });
         // Here you would typically save the idea to the 2027 bucket in Firestore

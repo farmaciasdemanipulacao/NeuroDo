@@ -93,7 +93,7 @@ export function IdeaCatcher() {
         }
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="shadow-none hover:bg-transparent hover:text-foreground md:hover:bg-accent md:hover:text-accent-foreground">
           <Lightbulb className="mr-2 h-4 w-4" />
           Captura Rápida
         </Button>

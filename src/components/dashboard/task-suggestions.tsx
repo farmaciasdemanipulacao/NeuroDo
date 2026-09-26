@@ -34,7 +34,7 @@ export function TaskSuggestions() {
     if (result._isError) {
       toast({
         variant: 'destructive',
-        title: 'Erro do Mentor de IA',
+        title: result._errorCode === 'NO_CREDITS' ? 'IA temporariamente sem créditos' : 'Erro do Mentor de IA',
         description: result._errorMessage || 'Não foi possível gerar sugestões. Tente novamente.',
       });
       setIsLoading(false);

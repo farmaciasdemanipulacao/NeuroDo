@@ -15,7 +15,7 @@ export function Header({ onEnergyCheckinClick, onMentorSOSClick }: HeaderProps) 
   const { energyLevel } = useApp();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 w-full items-center gap-2 border-b bg-background px-4">
+    <header className="sticky top-0 z-10 flex h-[calc(3.5rem+env(safe-area-inset-top))] w-full items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)]">
       <SidebarTrigger />
       
       <div className="ml-auto flex items-center gap-2">

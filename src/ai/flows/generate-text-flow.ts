@@ -31,20 +31,23 @@ const GenerateTextOutputSchema = z.object({
   text: z.string().describe('The generated text.'),
 });
 export type GenerateTextOutput = z.infer<typeof GenerateTextOutputSchema>;
+export type GenerateTextResult =
+  | { text: string; error?: never; errorCode?: never }
+  | { text?: never; error: string; errorCode: string };
 
 
 /**
  * A simple server action that generates text based on a given prompt using OpenAI.
  */
-export async function generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+export async function generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
   if (!openai || initError) {
     console.error("OpenAI Init Error:", initError);
-    throw new Error(`Server Configuration Error: ${initError}`);
+    return { error: 'A IA não está configurada corretamente no servidor.', errorCode: 'INIT_ERROR' };
   }
 
   const validatedInput = GenerateTextInputSchema.safeParse(input);
   if (!validatedInput.success) {
-    throw new Error(`Invalid input: ${validatedInput.error.message}`);
+    return { error: 'O texto enviado para a IA é inválido.', errorCode: 'VALIDATION_ERROR' };
   }
   
   try {
@@ -60,7 +63,7 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
 
     const text = response.choices[0]?.message?.content;
     if (!text) {
-      throw new Error("A API da OpenAI não retornou conteúdo.");
+      return { error: 'A IA não retornou conteúdo.', errorCode: 'EMPTY_RESPONSE' };
     }
     
     return { text };
@@ -68,6 +71,6 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
   } catch (error: any) {
     const classified = classifyOpenAIError(error);
     console.error('[GenerateText] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
-    throw new Error(classified.error);
+    return { error: classified.error, errorCode: classified.errorCode };
   }
 }

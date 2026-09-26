@@ -48,7 +48,7 @@ export function MetricsChart() {
         String(day.getDate()).padStart(2, '0'),
       ].join('-');
       const count = tasks?.filter(
-        (t) => t.completed && t.scheduledDate === dayStr
+        (t) => t.completed && ((typeof t.completedAt === 'string' && t.completedAt.slice(0, 10) === dayStr) || (!t.completedAt && t.scheduledDate === dayStr))
       ).length ?? 0;
       return {
         date: format(day, 'EEE', { locale: ptBR }),

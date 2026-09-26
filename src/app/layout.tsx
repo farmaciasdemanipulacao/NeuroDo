@@ -54,7 +54,7 @@ export default function RootLayout({
 
   try {
     return (
-      <html lang="pt-BR" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
+      <html lang="pt-BR" className="dark" data-theme="default" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
         <head>
           {/* Google Fonts are now imported in globals.css */}
           <link rel="icon" href="/logo-neurodo-favicon.png" type="image/png" />
@@ -64,6 +64,7 @@ export default function RootLayout({
           {/*
             Elemento real, não pseudo-elemento: iOS usa a pintura no topo da
             viewport para definir o acabamento da barra de status do PWA.
+            A cor acompanha o tema via CSS variables sem reativar translucidez.
           */}
           <div
             id="ios-status-bar-tint"
@@ -72,7 +73,7 @@ export default function RootLayout({
               position: 'fixed',
               inset: '0 0 auto 0',
               height: 1,
-              backgroundColor: '#14151f',
+              backgroundColor: 'hsl(var(--background))',
               pointerEvents: 'none',
               zIndex: 2147483647,
             }}

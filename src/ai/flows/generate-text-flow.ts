@@ -6,6 +6,7 @@
  */
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { classifyOpenAIError, withOpenAITimeout } from '@/ai/openai-errors';
 
 // --- OpenAI Client Configuration ---
 const apiKey = process.env.OPENAI_API_KEY;
@@ -47,7 +48,7 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
   }
   
   try {
-    const response = await openai.chat.completions.create({
+    const response = await withOpenAITimeout((signal) => openai!.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: 'You are a helpful assistant. Respond clearly and concisely.' },
@@ -55,7 +56,7 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
       ],
       temperature: 0.7,
       max_tokens: 150,
-    });
+    }, { signal }));
 
     const text = response.choices[0]?.message?.content;
     if (!text) {
@@ -65,7 +66,8 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
     return { text };
 
   } catch (error: any) {
-    console.error("Error communicating with OpenAI API:", error);
-    throw new Error(`Ocorreu um erro ao se comunicar com a IA: ${error.message}`);
+    const classified = classifyOpenAIError(error);
+    console.error('[GenerateText] Erro OpenAI classificado:', { errorCode: classified.errorCode, status: classified.status });
+    throw new Error(classified.error);
   }
 }

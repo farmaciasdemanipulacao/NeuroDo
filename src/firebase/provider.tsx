@@ -4,6 +4,7 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { waitForAuthPersistence } from '@/firebase';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { User as AppUser } from '@/lib/types';
 
@@ -86,7 +87,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     let unsubscribeUserDoc: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(
+    let unsubscribeAuth: (() => void) | null = null;
+    let cancelled = false;
+
+    waitForAuthPersistence().finally(() => {
+      if (cancelled) return;
+      unsubscribeAuth = onAuthStateChanged(
       auth,
       async (firebaseUser) => { // Auth state determined
         if (firebaseUser) {
@@ -124,9 +130,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         setUserAuthState({ user: null, appUser: null, isUserLoading: false, userError: error });
       }
     );
+    });
 
     return () => {
-      unsubscribeAuth();
+      cancelled = true;
+      unsubscribeAuth?.();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
     };
   }, [auth, firestore]); // Depends on the auth and firestore instances

@@ -4,7 +4,7 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { waitForAuthPersistence } from '@/firebase';
+import { waitForAuthPersistence } from './auth-persistence';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { User as AppUser } from '@/lib/types';
 

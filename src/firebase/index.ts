@@ -2,12 +2,7 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import { initializeFirestore, getFirestore } from 'firebase/firestore';
-
-let authPersistenceReady: Promise<void> | null = null;
-
-export function waitForAuthPersistence(): Promise<void> {
-  return authPersistenceReady ?? Promise.resolve();
-}
+import { setAuthPersistenceReady } from './auth-persistence';
 
 export function initializeFirebase() {
   // Safety: do not initialize Firebase on the server.
@@ -33,9 +28,9 @@ export function initializeFirebase() {
   if (!getApps().length) {
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
-    authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((error) => {
+    setAuthPersistenceReady(setPersistence(auth, browserLocalPersistence).catch((error) => {
       console.error('[Firebase] Não foi possível ativar persistência local do login:', error);
-    });
+    }));
     return {
       firebaseApp,
       auth,
@@ -49,9 +44,9 @@ export function initializeFirebase() {
 
   const app = getApp();
   const auth = getAuth(app);
-  authPersistenceReady ??= setPersistence(auth, browserLocalPersistence).catch((error) => {
+  setAuthPersistenceReady(setPersistence(auth, browserLocalPersistence).catch((error) => {
     console.error('[Firebase] Não foi possível ativar persistência local do login:', error);
-  });
+  }));
   return {
     firebaseApp: app,
     auth,
@@ -59,6 +54,7 @@ export function initializeFirebase() {
   };
 }
 
+export * from './auth-persistence';
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';

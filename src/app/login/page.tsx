@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser, useFirestore } from '@/firebase';
+import { useAuth, useUser, useFirestore, waitForAuthPersistence } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   getRedirectResult,
@@ -149,6 +149,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      await waitForAuthPersistence();
       await signInWithEmailAndPassword(auth, email.trim(), password);
       toast({ title: 'Bem-vindo de volta!' });
       router.replace('/dashboard');
@@ -238,6 +239,8 @@ export default function LoginPage() {
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
+      await waitForAuthPersistence();
+
       if (isStandalonePwa()) {
         await signInWithRedirect(auth, provider);
         return;

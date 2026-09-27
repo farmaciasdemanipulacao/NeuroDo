@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useUser, useFirestore, waitForAuthPersistence } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
-  getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
   updateProfile,
   type User as FirebaseAuthUser,
 } from 'firebase/auth';
@@ -22,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogIn, UserPlus, Chrome, KeyRound } from 'lucide-react';
+import { Loader2, LogIn, UserPlus, Chrome } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/dashboard/logo';
 
@@ -54,19 +52,6 @@ function friendlyAuthMessage(error: unknown): string {
   return messages[code] ?? 'Não foi possível concluir o acesso. Tente novamente.';
 }
 
-function isStandalonePwa(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const navigatorWithStandalone = window.navigator as Navigator & {
-    standalone?: boolean;
-  };
-
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    navigatorWithStandalone.standalone === true
-  );
-}
-
 export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -79,7 +64,6 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [isResolvingRedirect, setIsResolvingRedirect] = useState(true);
 
   const ensureUserDocument = async (authUser: FirebaseAuthUser) => {
     const userRef = doc(firestore, 'users', authUser.uid);
@@ -106,43 +90,6 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function resolveGoogleRedirect() {
-      try {
-        const result = await getRedirectResult(auth);
-        if (!result || cancelled) return;
-
-        await ensureUserDocument(result.user);
-
-        if (!cancelled) {
-          toast({ title: 'Login com Google realizado!' });
-          router.replace('/dashboard');
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast({
-            variant: 'destructive',
-            title: 'Erro no login com Google',
-            description: friendlyAuthMessage(error),
-          });
-        }
-      } finally {
-        if (!cancelled) {
-          setIsResolvingRedirect(false);
-        }
-      }
-    }
-
-    resolveGoogleRedirect();
-
-    return () => {
-      cancelled = true;
-    };
-    // auth/firestore são instâncias estáveis providas pelo FirebaseProvider.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore]);
 
   const handleEmailSignIn = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -241,11 +188,6 @@ export default function LoginPage() {
     try {
       await waitForAuthPersistence();
 
-      if (isStandalonePwa()) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
       const result = await signInWithPopup(auth, provider);
       await ensureUserDocument(result.user);
 
@@ -262,7 +204,7 @@ export default function LoginPage() {
     }
   };
 
-  if (isUserLoading || isResolvingRedirect) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -422,12 +364,6 @@ export default function LoginPage() {
             Google
           </Button>
 
-          {isStandalonePwa() && (
-            <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
-              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              No app instalado, o Google usa o fluxo de acesso compatível com PWA.
-            </p>
-          )}
         </CardContent>
 
         <CardFooter className="flex justify-center">

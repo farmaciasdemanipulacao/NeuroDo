@@ -1,7 +1,13 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import { initializeFirestore, getFirestore } from 'firebase/firestore';
+
+let authPersistenceReady: Promise<void> | null = null;
+
+export function waitForAuthPersistence(): Promise<void> {
+  return authPersistenceReady ?? Promise.resolve();
+}
 
 export function initializeFirebase() {
   // Safety: do not initialize Firebase on the server.
@@ -26,9 +32,13 @@ export function initializeFirebase() {
 
   if (!getApps().length) {
     const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.error('[Firebase] Não foi possível ativar persistência local do login:', error);
+    });
     return {
       firebaseApp,
-      auth: getAuth(firebaseApp),
+      auth,
       // experimentalAutoDetectLongPolling evita erros 400 no WebChannel
       // quando a conexão streaming é instável (fix para "transport errored")
       firestore: initializeFirestore(firebaseApp, {
@@ -38,9 +48,13 @@ export function initializeFirebase() {
   }
 
   const app = getApp();
+  const auth = getAuth(app);
+  authPersistenceReady ??= setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('[Firebase] Não foi possível ativar persistência local do login:', error);
+  });
   return {
     firebaseApp: app,
-    auth: getAuth(app),
+    auth,
     firestore: getFirestore(app),
   };
 }
